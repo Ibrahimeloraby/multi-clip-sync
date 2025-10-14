@@ -8,6 +8,7 @@ import CreateSession from "./pages/CreateSession";
 import JoinSession from "./pages/JoinSession";
 import SessionView from "./pages/SessionView";
 import Pricing from "./pages/Pricing";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/create" element={<CreateSession />} />
           <Route path="/join/:code?" element={<JoinSession />} />
           <Route path="/session/:id" element={<SessionView />} />
