@@ -14,13 +14,166 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          device_id: string
+          id: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          device_id: string
+          id: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          device_id?: string
+          id?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      session_participants: {
+        Row: {
+          device_id: string
+          id: string
+          joined_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          device_id: string
+          id?: string
+          joined_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          device_id?: string
+          id?: string
+          joined_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          latitude: number | null
+          longitude: number | null
+          max_video_length: number
+          mode: string
+          name: string
+          owner_id: string
+          tier: string
+          time_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          max_video_length?: number
+          mode: string
+          name: string
+          owner_id: string
+          tier?: string
+          time_code: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          max_video_length?: number
+          mode?: string
+          name?: string
+          owner_id?: string
+          tier?: string
+          time_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          device_id: string
+          duration: number
+          id: string
+          latitude: number | null
+          longitude: number | null
+          session_id: string
+          storage_path: string
+          thumbnail_url: string | null
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          device_id: string
+          duration: number
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          session_id: string
+          storage_path: string
+          thumbnail_url?: string | null
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          device_id?: string
+          duration?: number
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          session_id?: string
+          storage_path?: string
+          thumbnail_url?: string | null
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_time_code: {
+        Args: { device_uuid: string; session_uuid: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
