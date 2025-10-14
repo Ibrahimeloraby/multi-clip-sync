@@ -1,25 +1,222 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import VideoUpload from "@/components/VideoUpload";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Video, Play, Pause, Upload, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Video, Play, Users, Download, Share2, Trash2, Crown } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+interface Session {
+  id: string;
+  name: string;
+  time_code: string;
+  mode: string;
+  tier: string;
+  max_video_length: number;
+  owner_id: string;
+}
+
+interface Profile {
+  id: string;
+  username: string;
+  device_id: string;
+  avatar_url?: string;
+}
+
+interface Participant {
+  id: string;
+  user_id: string;
+  device_id: string;
+  joined_at: string;
+  profiles: Profile;
+}
+
+interface VideoItem {
+  id: string;
+  user_id: string;
+  device_id: string;
+  storage_path: string;
+  thumbnail_url: string | null;
+  duration: number;
+  uploaded_at: string;
+  profiles: Profile;
+}
 
 const SessionView = () => {
   const { id } = useParams();
-  const [isRecording, setIsRecording] = useState(false);
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   
-  const mockVideos = [
-    { id: 1, user: "Alice", duration: "0:15", thumbnail: "" },
-    { id: 2, user: "Bob", duration: "0:22", thumbnail: "" },
-    { id: 3, user: "Charlie", duration: "0:18", thumbnail: "" }
-  ];
+  const [session, setSession] = useState<Session | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
 
-  const mockParticipants = [
-    { id: 1, name: "Alice", status: "active" },
-    { id: 2, name: "Bob", status: "active" },
-    { id: 3, name: "Charlie", status: "inactive" }
-  ];
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast.error("Please sign in to view session");
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user && id) {
+      fetchSessionData();
+      subscribeToUpdates();
+    }
+  }, [user, id]);
+
+  const fetchSessionData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch session
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (sessionError) throw sessionError;
+      setSession(sessionData);
+      setIsOwner(sessionData.owner_id === user?.id);
+
+      // Fetch user profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user!.id)
+        .single();
+
+      if (profileError) throw profileError;
+      setUserProfile(profileData);
+
+      // Fetch participants
+      const { data: participantsData, error: participantsError } = await supabase
+        .from('session_participants')
+        .select('*, profiles(*)')
+        .eq('session_id', id);
+
+      if (participantsError) throw participantsError;
+      setParticipants(participantsData as any);
+
+      // Fetch videos
+      const { data: videosData, error: videosError } = await supabase
+        .from('videos')
+        .select('*, profiles(*)')
+        .eq('session_id', id)
+        .order('uploaded_at', { ascending: true });
+
+      if (videosError) throw videosError;
+      setVideos(videosData as any);
+
+    } catch (error: any) {
+      console.error("Error fetching session:", error);
+      toast.error(error.message || "Failed to load session");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const subscribeToUpdates = () => {
+    const channel = supabase
+      .channel(`session-${id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'videos',
+        filter: `session_id=eq.${id}`
+      }, () => {
+        fetchSessionData();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'session_participants',
+        filter: `session_id=eq.${id}`
+      }, () => {
+        fetchSessionData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    try {
+      const { error } = await supabase
+        .from('videos')
+        .delete()
+        .eq('id', videoId);
+
+      if (error) throw error;
+      toast.success("Video deleted");
+      fetchSessionData();
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete video");
+    }
+  };
+
+  const handleExport = () => {
+    if (session?.tier === 'free') {
+      toast.info("Exporting with watermark (Free tier)");
+    }
+    toast.success("Export feature coming soon! This will stitch all videos together.");
+  };
+
+  const handleShare = () => {
+    const shareUrl = `${window.location.origin}/join/${session?.time_code}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast.success("Session link copied!");
+  };
+
+  if (loading || authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-xl gradient-primary animate-pulse mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session || !userProfile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Session Not Found</h1>
+          <Button onClick={() => navigate('/')}>Go Home</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const tierColors = {
+    free: "bg-muted",
+    pro: "bg-secondary",
+    enterprise: "bg-primary"
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,122 +227,196 @@ const SessionView = () => {
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold">Session: {id}</h1>
-              <p className="text-muted-foreground">Collaborative recording session</p>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold">{session.name}</h1>
+                {isOwner && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Crown className="w-3 h-3" />
+                    Owner
+                  </Badge>
+                )}
+              </div>
+              <p className="text-muted-foreground font-mono text-sm">Code: {session.time_code}</p>
+              <div className="flex gap-2 mt-2">
+                <Badge className={tierColors[session.tier as keyof typeof tierColors]}>
+                  {session.tier.toUpperCase()}
+                </Badge>
+                <Badge variant="outline">{session.mode} mode</Badge>
+              </div>
             </div>
-            <div className="flex items-center gap-2 glass-card px-4 py-2 rounded-lg">
-              <Users className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">{mockParticipants.length} participants</span>
+            
+            <div className="flex gap-2">
+              <Button onClick={handleShare} variant="secondary" size="sm">
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
+              {isOwner && videos.length > 0 && (
+                <Button onClick={handleExport} className="gradient-primary" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Timeline
+                </Button>
+              )}
             </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Main Recording Area */}
+            {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Camera Preview */}
+              {/* Video Upload */}
+              <VideoUpload
+                sessionId={session.id}
+                userId={user!.id}
+                deviceId={userProfile.device_id}
+                maxDuration={session.max_video_length}
+                onUploadComplete={fetchSessionData}
+              />
+
+              {/* Multi-Angle Timeline */}
               <Card className="glass-card p-6 space-y-4">
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center mx-auto">
-                      <Video className="w-10 h-10 text-primary-foreground" />
-                    </div>
-                    <p className="text-muted-foreground">Camera preview will appear here</p>
-                  </div>
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold">Multi-Angle Timeline</h2>
+                  <span className="text-sm text-muted-foreground">
+                    {videos.length} video{videos.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
                 
-                <div className="flex gap-2 justify-center">
-                  <Button 
-                    size="lg"
-                    variant={isRecording ? "destructive" : "default"}
-                    className={!isRecording ? "gradient-primary" : ""}
-                    onClick={() => setIsRecording(!isRecording)}
-                  >
-                    {isRecording ? (
-                      <>
-                        <Pause className="w-5 h-5 mr-2" />
-                        Stop Recording
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-5 h-5 mr-2" />
-                        Start Recording
-                      </>
-                    )}
-                  </Button>
-                  <Button size="lg" variant="secondary">
-                    <Upload className="w-5 h-5 mr-2" />
-                    Upload
-                  </Button>
-                </div>
-              </Card>
-
-              {/* Timeline */}
-              <Card className="glass-card p-6 space-y-4">
-                <h2 className="text-xl font-semibold">Multi-Angle Timeline</h2>
-                <div className="space-y-3">
-                  {mockVideos.map((video) => (
-                    <div key={video.id} className="glass-card p-4 rounded-lg flex items-center justify-between hover-lift">
-                      <div className="flex items-center gap-3">
-                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                          <Video className="w-6 h-6 text-muted-foreground" />
+                {videos.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Video className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No videos yet. Be the first to upload!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {videos.map((video, index) => (
+                      <div key={video.id} className="glass-card p-4 rounded-lg flex items-center justify-between hover-lift">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                            {video.thumbnail_url ? (
+                              <img 
+                                src={video.thumbnail_url} 
+                                alt="Thumbnail"
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ) : (
+                              <Video className="w-6 h-6 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{video.profiles.username}</p>
+                              <span className="text-xs text-muted-foreground">#{index + 1}</span>
+                            </div>
+                            <div className="flex gap-3 text-sm text-muted-foreground">
+                              <span>{video.duration}s</span>
+                              <span>•</span>
+                              <span>{new Date(video.uploaded_at).toLocaleTimeString()}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{video.user}</p>
-                          <p className="text-sm text-muted-foreground">{video.duration}</p>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="secondary">
+                            <Play className="w-4 h-4" />
+                          </Button>
+                          {(isOwner || video.user_id === user?.id) && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="glass-card">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Video?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteVideo(video.id)}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </div>
-                      <Button size="sm" variant="secondary">
-                        <Play className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </Card>
             </div>
 
-            {/* Sidebar - Participants */}
+            {/* Sidebar */}
             <div className="space-y-6">
+              {/* Participants */}
               <Card className="glass-card p-6 space-y-4">
-                <h2 className="text-xl font-semibold">Participants</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Participants
+                  </h2>
+                  <span className="text-sm text-muted-foreground">
+                    {participants.length}/{session.tier === 'free' ? 3 : session.tier === 'pro' ? 20 : '∞'}
+                  </span>
+                </div>
                 <div className="space-y-3">
-                  {mockParticipants.map((participant) => (
+                  {participants.map((participant) => (
                     <div key={participant.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
                           <span className="text-sm font-medium text-primary-foreground">
-                            {participant.name[0]}
+                            {participant.profiles.username[0].toUpperCase()}
                           </span>
                         </div>
-                        <span className="font-medium">{participant.name}</span>
+                        <div>
+                          <p className="font-medium">{participant.profiles.username}</p>
+                          {participant.user_id === session.owner_id && (
+                            <p className="text-xs text-muted-foreground">Owner</p>
+                          )}
+                        </div>
                       </div>
-                      <div className={`w-2 h-2 rounded-full ${
-                        participant.status === 'active' ? 'bg-green-500' : 'bg-muted-foreground'
-                      }`} />
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
                     </div>
                   ))}
                 </div>
               </Card>
 
+              {/* Session Info */}
               <Card className="glass-card p-6 space-y-4">
                 <h2 className="text-xl font-semibold">Session Info</h2>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Code:</span>
-                    <span className="font-mono font-medium">{id}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tier:</span>
-                    <span className="font-medium text-primary">Free</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Max Length:</span>
-                    <span className="font-medium">30s</span>
+                    <span className="font-medium">{session.max_video_length}s</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Videos:</span>
-                    <span className="font-medium">{mockVideos.length}</span>
+                    <span className="font-medium">{videos.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Duration:</span>
+                    <span className="font-medium">
+                      {videos.reduce((sum, v) => sum + v.duration, 0)}s
+                    </span>
                   </div>
                 </div>
+                
+                {session.tier === 'free' && participants.length >= 3 && (
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Reached contributor limit!
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full gradient-primary"
+                      onClick={() => navigate('/pricing')}
+                    >
+                      Upgrade to Pro
+                    </Button>
+                  </div>
+                )}
               </Card>
             </div>
           </div>

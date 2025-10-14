@@ -64,6 +64,30 @@ const CreateSession = () => {
 
       const maxVideoLength = tier === 'free' ? 30 : tier === 'pro' ? 120 : 600;
 
+      // Get current location if proximity mode
+      let latitude = null;
+      let longitude = null;
+      
+      if (mode === 'proximity') {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000
+          });
+        }).catch(() => {
+          toast.error("Location access required for proximity mode");
+          return null;
+        });
+
+        if (!position) {
+          setLoading(false);
+          return;
+        }
+
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+      }
+
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -72,6 +96,8 @@ const CreateSession = () => {
           name: sessionName,
           time_code: generatedTimeCode,
           mode,
+          latitude,
+          longitude,
           max_video_length: maxVideoLength,
           tier
         })
@@ -79,6 +105,15 @@ const CreateSession = () => {
         .single();
 
       if (sessionError) throw sessionError;
+
+      // Create session limits
+      await supabase
+        .from('session_limits')
+        .insert({
+          session_id: session.id,
+          max_contributors: tier === 'free' ? 3 : tier === 'pro' ? 20 : 999,
+          max_video_duration: maxVideoLength
+        });
 
       // Add owner as participant
       await supabase

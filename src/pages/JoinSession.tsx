@@ -1,33 +1,202 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { Users, MapPin, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const JoinSession = () => {
   const navigate = useNavigate();
   const { code } = useParams();
+  const { user, loading: authLoading } = useAuth();
   const [sessionCode, setSessionCode] = useState(code || "");
-  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [checkingLocation, setCheckingLocation] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null);
 
-  const handleJoinSession = () => {
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast.error("Please sign in to join a session");
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  const checkProximity = (lat1: number, lon1: number, lat2: number, lon2: number): boolean => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    const distance = R * c; // Distance in meters
+    return distance <= 100; // Within 100m
+  };
+
+  const requestLocation = async (): Promise<{lat: number, lon: number} | null> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        toast.error("Geolocation is not supported by your browser");
+        resolve(null);
+        return;
+      }
+
+      setCheckingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          };
+          setUserLocation(location);
+          setCheckingLocation(false);
+          resolve(location);
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          toast.error("Unable to get your location");
+          setCheckingLocation(false);
+          resolve(null);
+        }
+      );
+    });
+  };
+
+  const handleJoinSession = async () => {
     if (!sessionCode.trim()) {
       toast.error("Please enter a session code");
       return;
     }
-    
-    if (!username.trim()) {
-      toast.error("Please enter your name");
+
+    if (!user) {
+      toast.error("Please sign in first");
+      navigate('/auth');
       return;
     }
-    
-    toast.success("Joined session successfully!");
-    navigate(`/session/${sessionCode}`);
+
+    setLoading(true);
+
+    try {
+      // Find session by time code
+      const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('time_code', sessionCode.toUpperCase())
+        .eq('is_active', true)
+        .single();
+
+      if (sessionError || !session) {
+        toast.error("Session not found or inactive");
+        setLoading(false);
+        return;
+      }
+
+      // Check contributor limit
+      const { data: limitCheck } = await supabase
+        .rpc('check_contributor_limit', { p_session_id: session.id });
+
+      if (!limitCheck) {
+        toast.error("Session has reached maximum contributors. Upgrade to Pro for more slots!");
+        setLoading(false);
+        return;
+      }
+
+      // Check if already joined
+      const { data: existingParticipant } = await supabase
+        .from('session_participants')
+        .select('id')
+        .eq('session_id', session.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingParticipant) {
+        toast.success("Already in this session!");
+        navigate(`/session/${session.id}`);
+        setLoading(false);
+        return;
+      }
+
+      // Check proximity for proximity mode
+      if (session.mode === 'proximity') {
+        if (!session.latitude || !session.longitude) {
+          toast.error("Session location not set");
+          setLoading(false);
+          return;
+        }
+
+        const location = await requestLocation();
+        
+        if (!location) {
+          toast.error("Location access required for proximity mode");
+          setLoading(false);
+          return;
+        }
+
+        const withinRange = checkProximity(
+          location.lat,
+          location.lon,
+          session.latitude,
+          session.longitude
+        );
+
+        if (!withinRange) {
+          toast.error("You must be within 100m of the session location");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Get user's device ID
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('device_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Add as participant
+      const { error: participantError } = await supabase
+        .from('session_participants')
+        .insert({
+          session_id: session.id,
+          user_id: user.id,
+          device_id: profile.device_id
+        });
+
+      if (participantError) throw participantError;
+
+      toast.success("Joined session successfully!");
+      navigate(`/session/${session.id}`);
+
+    } catch (error: any) {
+      console.error("Error joining session:", error);
+      toast.error(error.message || "Failed to join session");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-xl gradient-primary animate-pulse mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -41,41 +210,59 @@ const JoinSession = () => {
             </div>
             <h1 className="text-4xl font-bold">Join Session</h1>
             <p className="text-muted-foreground">
-              Enter the session code to start collaborating
+              Enter the time code to start collaborating
             </p>
           </div>
 
+          {checkingLocation && (
+            <Alert className="glass-card">
+              <MapPin className="h-4 w-4" />
+              <AlertDescription>
+                Checking your location for proximity verification...
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Card className="glass-card p-8 space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="code">Session Code</Label>
+              <Label htmlFor="code">Time Code</Label>
               <Input
                 id="code"
-                placeholder="e.g., ABC123"
+                placeholder="e.g., TC-202501151430-A3F2"
                 value={sessionCode}
                 onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
                 className="glass-card border-border font-mono text-lg"
-                maxLength={6}
+                disabled={loading}
               />
+              <p className="text-xs text-muted-foreground">
+                Get this code from the session creator
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="username">Your Name</Label>
-              <Input
-                id="username"
-                placeholder="Enter your name"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="glass-card border-border"
-              />
-            </div>
+            {userLocation && (
+              <Alert className="glass-card">
+                <MapPin className="h-4 w-4" />
+                <AlertDescription>
+                  Location: {userLocation.lat.toFixed(4)}, {userLocation.lon.toFixed(4)}
+                </AlertDescription>
+              </Alert>
+            )}
 
             <Button 
               onClick={handleJoinSession} 
               className="w-full gradient-primary"
               size="lg"
+              disabled={loading || checkingLocation}
             >
-              Join Session
+              {loading ? "Joining..." : checkingLocation ? "Checking Location..." : "Join Session"}
             </Button>
+
+            <Alert className="glass-card">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Some sessions require you to be within 100m. Location access may be requested.
+              </AlertDescription>
+            </Alert>
           </Card>
         </div>
       </div>

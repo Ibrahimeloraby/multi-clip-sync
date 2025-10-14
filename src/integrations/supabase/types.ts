@@ -41,6 +41,35 @@ export type Database = {
         }
         Relationships: []
       }
+      session_limits: {
+        Row: {
+          created_at: string
+          max_contributors: number
+          max_video_duration: number
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          max_contributors?: number
+          max_video_duration?: number
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          max_contributors?: number
+          max_video_duration?: number
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_limits_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_participants: {
         Row: {
           device_id: string
@@ -118,6 +147,44 @@ export type Database = {
         }
         Relationships: []
       }
+      synced_sessions: {
+        Row: {
+          created_at: string
+          duration: number
+          export_format: string
+          has_watermark: boolean
+          id: string
+          session_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          duration: number
+          export_format?: string
+          has_watermark?: boolean
+          id?: string
+          session_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          export_format?: string
+          has_watermark?: boolean
+          id?: string
+          session_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "synced_sessions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           device_id: string
@@ -170,6 +237,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_contributor_limit: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
       generate_time_code: {
         Args: { device_uuid: string; session_uuid: string }
         Returns: string
