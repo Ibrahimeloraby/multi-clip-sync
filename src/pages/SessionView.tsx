@@ -76,7 +76,7 @@ const SessionView = () => {
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('my-videos');
+  const [viewMode, setViewMode] = useState<ViewMode>('all-videos'); // Default to all videos
   const [showMultiAnglePlayer, setShowMultiAnglePlayer] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
   const [autoRecordMode, setAutoRecordMode] = useState(searchParams.get('autoRecord') === 'true');
