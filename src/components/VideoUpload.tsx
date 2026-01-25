@@ -288,19 +288,27 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       
       {recording && (
         <div className="space-y-4">
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className="w-full aspect-video bg-muted rounded-lg object-cover"
-          />
+          <div className="relative">
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full aspect-video bg-black rounded-lg object-cover"
+              style={{ minHeight: '200px' }}
+            />
+            {/* Recording indicator */}
+            <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+              REC
+            </div>
+          </div>
           <Button
             onClick={stopRecording}
             variant="destructive"
-            className="w-full"
+            className="w-full py-6 text-lg"
           >
-            Stop Recording
+            ⏹ Stop Recording
           </Button>
         </div>
       )}
