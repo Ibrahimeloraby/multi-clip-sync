@@ -11,6 +11,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+const PENDING_SESSION_KEY = 'pending_session_code';
+
 const JoinSession = () => {
   const navigate = useNavigate();
   const { code } = useParams();
@@ -19,13 +21,40 @@ const JoinSession = () => {
   const [loading, setLoading] = useState(false);
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null);
+  const [autoJoining, setAutoJoining] = useState(false);
 
+  // Save session code and redirect to auth if not logged in
   useEffect(() => {
-    if (!authLoading && !user) {
-      toast.error("Please sign in to join a session");
+    if (authLoading) return;
+    
+    // If user came from QR code with a code in URL
+    if (code && !user) {
+      // Save the code so we can auto-join after auth
+      localStorage.setItem(PENDING_SESSION_KEY, code);
+      toast.info("Please sign in quickly to join the session");
       navigate('/auth');
+      return;
     }
-  }, [user, authLoading, navigate]);
+
+    // If user just logged in and has a pending session
+    if (user) {
+      const pendingCode = localStorage.getItem(PENDING_SESSION_KEY);
+      if (pendingCode) {
+        setSessionCode(pendingCode);
+        localStorage.removeItem(PENDING_SESSION_KEY);
+        // Auto-join the session
+        setAutoJoining(true);
+      }
+    }
+  }, [user, authLoading, code, navigate]);
+
+  // Auto-join when we have user and pending code
+  useEffect(() => {
+    if (autoJoining && user && sessionCode) {
+      handleJoinSession();
+      setAutoJoining(false);
+    }
+  }, [autoJoining, user, sessionCode]);
 
   const checkProximity = (lat1: number, lon1: number, lat2: number, lon2: number): boolean => {
     const R = 6371e3; // Earth's radius in meters
@@ -79,7 +108,9 @@ const JoinSession = () => {
     }
 
     if (!user) {
-      toast.error("Please sign in first");
+      // Save code and redirect to auth
+      localStorage.setItem(PENDING_SESSION_KEY, sessionCode);
+      toast.info("Please sign in to join");
       navigate('/auth');
       return;
     }
@@ -120,7 +151,7 @@ const JoinSession = () => {
         .maybeSingle();
 
       if (existingParticipant) {
-        toast.success("Already in this session!");
+        toast.success("Joining session...");
         navigate(`/session/${session.id}`);
         setLoading(false);
         return;
@@ -176,7 +207,7 @@ const JoinSession = () => {
 
       if (participantError) throw participantError;
 
-      toast.success("Joined session successfully!");
+      toast.success("Joined session! Start recording.");
       navigate(`/session/${session.id}`);
 
     } catch (error: any) {
