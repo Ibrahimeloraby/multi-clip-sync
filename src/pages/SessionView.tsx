@@ -204,9 +204,9 @@ const SessionView = () => {
   };
 
   const handleShare = () => {
-    const shareUrl = `${window.location.origin}/join/${session?.time_code}`;
+    const shareUrl = `${window.location.origin}/q/${session?.time_code}`;
     navigator.clipboard.writeText(shareUrl);
-    toast.success("Session link copied!");
+    toast.success("Quick join link copied!");
   };
 
   const copyTimeCode = () => {
@@ -473,7 +473,7 @@ const SessionView = () => {
                 {/* QR Code */}
                 <div className="flex justify-center p-4 bg-white rounded-lg">
                   <QRCodeSVG 
-                    value={`${window.location.origin}/join/${session.time_code}`}
+                    value={`${window.location.origin}/q/${session.time_code}`}
                     size={160}
                     level="H"
                     includeMargin={false}

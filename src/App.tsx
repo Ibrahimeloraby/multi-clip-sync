@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import CreateSession from "./pages/CreateSession";
 import JoinSession from "./pages/JoinSession";
+import QuickJoin from "./pages/QuickJoin";
 import SessionView from "./pages/SessionView";
 import Pricing from "./pages/Pricing";
 import Auth from "./pages/Auth";
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/create" element={<CreateSession />} />
           <Route path="/join/:code?" element={<JoinSession />} />
+          <Route path="/q/:code" element={<QuickJoin />} />
           <Route path="/session/:id" element={<SessionView />} />
           <Route path="/pricing" element={<Pricing />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
