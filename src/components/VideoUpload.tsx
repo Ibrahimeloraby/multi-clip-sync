@@ -18,8 +18,6 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-  const [videoDuration, setVideoDuration] = useState(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -75,9 +73,8 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         }
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
-        setRecordedBlob(blob);
         
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
@@ -85,6 +82,10 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         if (videoRef.current) {
           videoRef.current.srcObject = null;
         }
+
+        // Auto-upload the recording
+        toast.info("Saving recording...");
+        await uploadFile(blob, `recording-${Date.now()}.webm`);
       };
 
       // Start recording with timeslice for better compatibility
@@ -155,7 +156,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         })
       ]);
 
-      setVideoDuration(duration);
+      
 
       if (duration > maxDuration) {
         toast.error(`Video too long! Maximum ${maxDuration} seconds allowed.`);
@@ -211,7 +212,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       if (dbError) throw dbError;
 
       toast.success("Video uploaded successfully!");
-      setRecordedBlob(null);
+      
       onUploadComplete();
 
     } catch (error: any) {
@@ -234,11 +235,6 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
     }
   };
 
-  const handleRecordedUpload = () => {
-    if (recordedBlob) {
-      uploadFile(recordedBlob, `recording-${Date.now()}.webm`);
-    }
-  };
 
   return (
     <Card className="glass-card p-6 space-y-4">
@@ -263,27 +259,8 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         </div>
       )}
 
-      {recordedBlob && !uploading && (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Recording complete! Ready to upload.</p>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleRecordedUpload}
-              className="flex-1 gradient-primary"
-            >
-              Upload Recording
-            </Button>
-            <Button
-              onClick={() => setRecordedBlob(null)}
-              variant="secondary"
-            >
-              Retry
-            </Button>
-          </div>
-        </div>
-      )}
 
-      {!recording && !recordedBlob && !uploading && (
+      {!recording && !uploading && (
         <div className="grid grid-cols-2 gap-4">
           <Button
             onClick={startRecording}
