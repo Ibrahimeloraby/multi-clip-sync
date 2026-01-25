@@ -59,6 +59,8 @@ interface VideoItem {
   profiles: Profile;
 }
 
+type ViewMode = 'my-videos' | 'all-videos';
+
 const SessionView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -71,6 +73,12 @@ const SessionView = () => {
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('my-videos');
+
+  // Filter videos based on view mode - participants only see their own, owners can toggle
+  const displayedVideos = viewMode === 'my-videos' 
+    ? videos.filter(v => v.user_id === user?.id)
+    : videos;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -284,24 +292,48 @@ const SessionView = () => {
 
               {/* Multi-Angle Timeline */}
               <Card className="glass-card p-6 space-y-4">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold">Multi-Angle Timeline</h2>
-                  <span className="text-sm text-muted-foreground">
-                    {videos.length} video{videos.length !== 1 ? 's' : ''}
-                  </span>
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <h2 className="text-xl font-semibold">
+                    {viewMode === 'my-videos' ? 'My Videos' : 'All Videos'}
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    {isOwner && (
+                      <div className="flex bg-muted rounded-lg p-1">
+                        <Button
+                          size="sm"
+                          variant={viewMode === 'my-videos' ? 'secondary' : 'ghost'}
+                          onClick={() => setViewMode('my-videos')}
+                          className="text-xs"
+                        >
+                          My Videos
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={viewMode === 'all-videos' ? 'secondary' : 'ghost'}
+                          onClick={() => setViewMode('all-videos')}
+                          className="text-xs"
+                        >
+                          All ({videos.length})
+                        </Button>
+                      </div>
+                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {displayedVideos.length} video{displayedVideos.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
                 
-                {videos.length === 0 ? (
+                {displayedVideos.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <Video className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No videos yet. Be the first to upload!</p>
+                    <p>{viewMode === 'my-videos' ? 'You haven\'t recorded any videos yet. Start recording!' : 'No videos yet. Be the first to upload!'}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {videos.map((video, index) => (
+                    {displayedVideos.map((video, index) => (
                       <div key={video.id} className="glass-card p-4 rounded-lg flex items-center justify-between hover-lift">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center shrink-0 relative">
                             {video.thumbnail_url ? (
                               <img 
                                 src={video.thumbnail_url} 
@@ -311,11 +343,16 @@ const SessionView = () => {
                             ) : (
                               <Video className="w-6 h-6 text-muted-foreground" />
                             )}
+                            {/* Live indicator for real-time sync */}
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" title="Synced" />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <p className="font-medium">{video.profiles.username}</p>
+                              <p className="font-medium">{video.profiles?.username || 'Unknown'}</p>
                               <span className="text-xs text-muted-foreground">#{index + 1}</span>
+                              {video.user_id === user?.id && (
+                                <Badge variant="outline" className="text-xs">You</Badge>
+                              )}
                             </div>
                             <div className="flex gap-3 text-sm text-muted-foreground">
                               <span>{video.duration}s</span>
