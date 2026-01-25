@@ -2,7 +2,7 @@ import { Upload, Video as VideoIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -18,11 +18,140 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [pendingBlob, setPendingBlob] = useState<Blob | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const uploadFile = useCallback(async (file: Blob, fileName: string) => {
+    try {
+      setUploading(true);
+      setProgress(10);
+
+      // Create video element to get duration
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      
+      const duration = await Promise.race([
+        new Promise<number>((resolve, reject) => {
+          video.onloadedmetadata = () => {
+            // Handle Infinity duration for webm (Chrome issue)
+            if (video.duration === Infinity || isNaN(video.duration)) {
+              video.currentTime = Number.MAX_SAFE_INTEGER;
+              video.ontimeupdate = () => {
+                video.ontimeupdate = null;
+                video.currentTime = 0;
+                resolve(Math.max(1, Math.floor(video.duration)));
+              };
+            } else {
+              resolve(Math.max(1, Math.floor(video.duration)));
+            }
+          };
+          video.onerror = () => reject(new Error("Failed to load video"));
+          video.src = URL.createObjectURL(file);
+        }),
+        // Timeout fallback - estimate 1 second per 100KB
+        new Promise<number>((resolve) => {
+          setTimeout(() => {
+            const estimatedDuration = Math.max(1, Math.ceil(file.size / 100000));
+            resolve(Math.min(estimatedDuration, maxDuration));
+          }, 3000);
+        })
+      ]);
+
+      setProgress(30);
+
+      if (duration > maxDuration) {
+        toast.error(`Video too long! Maximum ${maxDuration} seconds allowed.`);
+        setUploading(false);
+        return;
+      }
+
+      // Get user location if available
+      let latitude = null;
+      let longitude = null;
+      
+      try {
+        if (navigator.geolocation) {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+          });
+          latitude = position.coords.latitude;
+          longitude = position.coords.longitude;
+        }
+      } catch {
+        // Location not available, continue without it
+      }
+
+      setProgress(50);
+
+      // Upload to storage
+      const filePath = `${userId}/${sessionId}/${Date.now()}-${fileName}`;
+      
+      console.log("Uploading video to storage:", filePath);
+      
+      const { error: uploadError } = await supabase.storage
+        .from('videos')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        throw uploadError;
+      }
+      
+      setProgress(80);
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(filePath);
+
+      console.log("Creating video record in database");
+
+      // Create video record in database
+      const { error: dbError } = await supabase
+        .from('videos')
+        .insert({
+          session_id: sessionId,
+          user_id: userId,
+          device_id: deviceId,
+          storage_path: filePath,
+          thumbnail_url: publicUrl,
+          duration: duration,
+          latitude,
+          longitude
+        });
+
+      if (dbError) {
+        console.error("Database insert error:", dbError);
+        throw dbError;
+      }
+
+      setProgress(100);
+      toast.success("Video uploaded successfully!");
+      onUploadComplete();
+
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast.error(error.message || "Failed to upload video");
+    } finally {
+      setUploading(false);
+      setProgress(0);
+    }
+  }, [sessionId, userId, deviceId, maxDuration, onUploadComplete]);
+
+  // Auto-upload when pendingBlob is set
+  useEffect(() => {
+    if (pendingBlob && !uploading) {
+      console.log("Pending blob detected, starting upload...");
+      toast.info("Saving recording...");
+      uploadFile(pendingBlob, `recording-${Date.now()}.webm`);
+      setPendingBlob(null);
+    }
+  }, [pendingBlob, uploading, uploadFile]);
 
   const startRecording = async () => {
     try {
@@ -35,6 +164,8 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         }, 
         audio: true 
       });
+
+      streamRef.current = stream;
 
       // Set recording state first so the video element renders
       setRecording(true);
@@ -73,19 +204,23 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         }
       };
 
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = () => {
+        console.log("MediaRecorder stopped, creating blob from chunks:", chunksRef.current.length);
         const blob = new Blob(chunksRef.current, { type: mimeType });
+        console.log("Blob created, size:", blob.size);
         
         // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
         
         if (videoRef.current) {
           videoRef.current.srcObject = null;
         }
 
-        // Auto-upload the recording
-        toast.info("Saving recording...");
-        await uploadFile(blob, `recording-${Date.now()}.webm`);
+        // Set pending blob to trigger upload via useEffect
+        setPendingBlob(blob);
       };
 
       // Start recording with timeslice for better compatibility
@@ -114,113 +249,10 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
   };
 
   const stopRecording = () => {
+    console.log("Stop recording called, state:", mediaRecorderRef.current?.state);
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
       setRecording(false);
-    }
-  };
-
-  const uploadFile = async (file: Blob, fileName: string) => {
-    try {
-      setUploading(true);
-      setProgress(0);
-
-      // Create video element to get duration
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      
-      const duration = await Promise.race([
-        new Promise<number>((resolve, reject) => {
-          video.onloadedmetadata = () => {
-            // Handle Infinity duration for webm (Chrome issue)
-            if (video.duration === Infinity || isNaN(video.duration)) {
-              video.currentTime = Number.MAX_SAFE_INTEGER;
-              video.ontimeupdate = () => {
-                video.ontimeupdate = null;
-                video.currentTime = 0;
-                resolve(Math.max(1, Math.floor(video.duration)));
-              };
-            } else {
-              resolve(Math.max(1, Math.floor(video.duration)));
-            }
-          };
-          video.onerror = () => reject(new Error("Failed to load video"));
-          video.src = URL.createObjectURL(file);
-        }),
-        // Timeout fallback - estimate 1 second per 100KB
-        new Promise<number>((resolve) => {
-          setTimeout(() => {
-            const estimatedDuration = Math.max(1, Math.ceil(file.size / 100000));
-            resolve(Math.min(estimatedDuration, maxDuration));
-          }, 3000);
-        })
-      ]);
-
-      
-
-      if (duration > maxDuration) {
-        toast.error(`Video too long! Maximum ${maxDuration} seconds allowed.`);
-        setUploading(false);
-        return;
-      }
-
-      // Get user location if available
-      let latitude = null;
-      let longitude = null;
-      
-      if (navigator.geolocation) {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject);
-        }).catch(() => null);
-        
-        if (position) {
-          latitude = position.coords.latitude;
-          longitude = position.coords.longitude;
-        }
-      }
-
-      // Upload to storage
-      const filePath = `${userId}/${sessionId}/${Date.now()}-${fileName}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('videos')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-      
-      setProgress(100);
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('videos')
-        .getPublicUrl(filePath);
-
-      // Create video record in database
-      const { error: dbError } = await supabase
-        .from('videos')
-        .insert({
-          session_id: sessionId,
-          user_id: userId,
-          device_id: deviceId,
-          storage_path: filePath,
-          thumbnail_url: publicUrl,
-          duration: duration,
-          latitude,
-          longitude
-        });
-
-      if (dbError) throw dbError;
-
-      toast.success("Video uploaded successfully!");
-      
-      onUploadComplete();
-
-    } catch (error: any) {
-      console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload video");
-    } finally {
-      setUploading(false);
-      setProgress(0);
     }
   };
 
@@ -234,7 +266,6 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       uploadFile(file, file.name);
     }
   };
-
 
   return (
     <Card className="glass-card p-6 space-y-4">
@@ -258,7 +289,6 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
           </Button>
         </div>
       )}
-
 
       {!recording && !uploading && (
         <div className="grid grid-cols-2 gap-4">
