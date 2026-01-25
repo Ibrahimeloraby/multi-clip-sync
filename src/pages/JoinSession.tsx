@@ -152,7 +152,7 @@ const JoinSession = () => {
 
       if (existingParticipant) {
         toast.success("Joining session...");
-        navigate(`/session/${session.id}`);
+        navigate(`/session/${session.id}?autoRecord=true`);
         setLoading(false);
         return;
       }
@@ -207,8 +207,8 @@ const JoinSession = () => {
 
       if (participantError) throw participantError;
 
-      toast.success("Joined session! Start recording.");
-      navigate(`/session/${session.id}`);
+      toast.success("Joined! Starting camera...");
+      navigate(`/session/${session.id}?autoRecord=true`);
 
     } catch (error: any) {
       console.error("Error joining session:", error);

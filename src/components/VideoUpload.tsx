@@ -12,9 +12,11 @@ interface VideoUploadProps {
   deviceId: string;
   maxDuration: number;
   onUploadComplete: () => void;
+  autoStart?: boolean;
+  onAutoStartComplete?: () => void;
 }
 
-const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplete }: VideoUploadProps) => {
+const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplete, autoStart, onAutoStartComplete }: VideoUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -152,6 +154,19 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       setPendingBlob(null);
     }
   }, [pendingBlob, uploading, uploadFile]);
+
+  // Auto-start recording when autoStart prop is true
+  const autoStartTriggered = useRef(false);
+  useEffect(() => {
+    if (autoStart && !autoStartTriggered.current && !recording && !uploading) {
+      autoStartTriggered.current = true;
+      // Small delay to ensure component is fully mounted
+      setTimeout(() => {
+        startRecording();
+        onAutoStartComplete?.();
+      }, 500);
+    }
+  }, [autoStart, recording, uploading]);
 
   const startRecording = async () => {
     try {

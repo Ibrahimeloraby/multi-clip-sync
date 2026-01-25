@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import Navbar from "@/components/Navbar";
 import VideoUpload from "@/components/VideoUpload";
@@ -65,7 +65,9 @@ type ViewMode = 'my-videos' | 'all-videos';
 const SessionView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
+  const autoRecordTriggered = useRef(false);
   
   const [session, setSession] = useState<Session | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -77,11 +79,14 @@ const SessionView = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('my-videos');
   const [showMultiAnglePlayer, setShowMultiAnglePlayer] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
+  const [autoRecordMode, setAutoRecordMode] = useState(searchParams.get('autoRecord') === 'true');
 
-  // Filter videos based on view mode - participants only see their own, owners can toggle
-  const displayedVideos = viewMode === 'my-videos' 
-    ? videos.filter(v => v.user_id === user?.id)
-    : videos;
+  // Filter videos based on view mode - participants ONLY see their own, owners can toggle
+  const displayedVideos = !isOwner 
+    ? videos.filter(v => v.user_id === user?.id)  // Participants always see only their own
+    : viewMode === 'my-videos' 
+      ? videos.filter(v => v.user_id === user?.id)
+      : videos;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -299,13 +304,15 @@ const SessionView = () => {
                 <MultiAnglePlayer videos={videos} />
               )}
 
-              {/* Video Upload */}
+              {/* Video Upload - prominent for participants */}
               <VideoUpload
                 sessionId={session.id}
                 userId={user!.id}
                 deviceId={userProfile.device_id}
                 maxDuration={session.max_video_length}
                 onUploadComplete={fetchSessionData}
+                autoStart={autoRecordMode && !isOwner}
+                onAutoStartComplete={() => setAutoRecordMode(false)}
               />
 
               {/* Multi-Angle Timeline */}
