@@ -76,6 +76,7 @@ const SessionView = () => {
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('my-videos');
   const [showMultiAnglePlayer, setShowMultiAnglePlayer] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
 
   // Filter videos based on view mode - participants only see their own, owners can toggle
   const displayedVideos = viewMode === 'my-videos' 
@@ -379,7 +380,11 @@ const SessionView = () => {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="secondary">
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            onClick={() => setPlayingVideo(video)}
+                          >
                             <Play className="w-4 h-4" />
                           </Button>
                           {(isOwner || video.user_id === user?.id) && (
@@ -530,6 +535,31 @@ const SessionView = () => {
           </div>
         </div>
       </div>
+
+      {/* Video Player Dialog */}
+      <AlertDialog open={!!playingVideo} onOpenChange={(open) => !open && setPlayingVideo(null)}>
+        <AlertDialogContent className="glass-card max-w-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Play className="w-5 h-5" />
+              {playingVideo?.profiles?.username || 'Video'} - {playingVideo?.duration}s
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
+            {playingVideo && (
+              <video
+                src={playingVideo.thumbnail_url || ''}
+                controls
+                autoPlay
+                className="w-full h-full"
+              />
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
