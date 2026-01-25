@@ -30,20 +30,39 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
     try {
       // Request camera and microphone permissions
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }, 
+        video: { 
+          facingMode: "user", 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        }, 
         audio: true 
       });
 
+      // Set recording state first so the video element renders
+      setRecording(true);
+
+      // Wait for next tick to ensure video element is in DOM
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        // Ensure video plays
-        await videoRef.current.play().catch(console.error);
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        
+        // Force play with error handling
+        try {
+          await videoRef.current.play();
+        } catch (playError) {
+          console.warn("Auto-play failed, user interaction may be needed:", playError);
+        }
       }
 
       // Check supported mimeType
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') 
         ? 'video/webm;codecs=vp8,opus' 
-        : 'video/webm';
+        : MediaRecorder.isTypeSupported('video/webm') 
+          ? 'video/webm' 
+          : 'video/mp4';
 
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
 
@@ -57,7 +76,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        const blob = new Blob(chunksRef.current, { type: mimeType });
         setRecordedBlob(blob);
         
         // Stop all tracks
@@ -68,8 +87,8 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         }
       };
 
-      mediaRecorder.start();
-      setRecording(true);
+      // Start recording with timeslice for better compatibility
+      mediaRecorder.start(1000);
       toast.success("Recording started!");
 
       // Auto-stop after max duration
@@ -82,6 +101,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
 
     } catch (error: any) {
       console.error("Error starting recording:", error);
+      setRecording(false);
       if (error.name === 'NotAllowedError') {
         toast.error("Camera access denied. Please allow camera permissions in your browser settings.");
       } else if (error.name === 'NotFoundError') {
