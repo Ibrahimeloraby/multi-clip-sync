@@ -28,18 +28,24 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
 
   const startRecording = async () => {
     try {
+      // Request camera and microphone permissions
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }, 
         audio: true 
       });
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Ensure video plays
+        await videoRef.current.play().catch(console.error);
       }
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp8,opus'
-      });
+      // Check supported mimeType
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') 
+        ? 'video/webm;codecs=vp8,opus' 
+        : 'video/webm';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
 
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -64,6 +70,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
 
       mediaRecorder.start();
       setRecording(true);
+      toast.success("Recording started!");
 
       // Auto-stop after max duration
       setTimeout(() => {
@@ -73,9 +80,15 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         }
       }, maxDuration * 1000);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error starting recording:", error);
-      toast.error("Failed to access camera/microphone");
+      if (error.name === 'NotAllowedError') {
+        toast.error("Camera access denied. Please allow camera permissions in your browser settings.");
+      } else if (error.name === 'NotFoundError') {
+        toast.error("No camera found. Please connect a camera and try again.");
+      } else {
+        toast.error("Failed to access camera/microphone. Please check your permissions.");
+      }
     }
   };
 

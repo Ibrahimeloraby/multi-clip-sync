@@ -5,7 +5,8 @@ import VideoUpload from "@/components/VideoUpload";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Video, Play, Users, Download, Share2, Trash2, Crown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -68,6 +69,7 @@ const SessionView = () => {
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -188,6 +190,14 @@ const SessionView = () => {
     const shareUrl = `${window.location.origin}/join/${session?.time_code}`;
     navigator.clipboard.writeText(shareUrl);
     toast.success("Session link copied!");
+  };
+
+  const copyTimeCode = () => {
+    if (!session?.time_code) return;
+    navigator.clipboard.writeText(session.time_code);
+    setCopied(true);
+    toast.success("Time code copied!");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading || authLoading) {
@@ -380,6 +390,38 @@ const SessionView = () => {
                       <div className="w-2 h-2 rounded-full bg-green-500" />
                     </div>
                   ))}
+                </div>
+              </Card>
+
+              {/* Share Time Code */}
+              <Card className="glass-card p-6 space-y-4 border-2 border-primary/20">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Share2 className="w-5 h-5 text-primary" />
+                  Share Session
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Share this code with others so they can join and record from their phone
+                </p>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      value={session.time_code}
+                      readOnly
+                      className="font-mono text-lg font-bold text-center bg-muted"
+                    />
+                    <Button 
+                      variant="secondary" 
+                      size="icon"
+                      onClick={copyTimeCode}
+                      className="shrink-0"
+                    >
+                      {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <Button onClick={handleShare} className="w-full gradient-primary" size="sm">
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Copy Join Link
+                  </Button>
                 </div>
               </Card>
 
