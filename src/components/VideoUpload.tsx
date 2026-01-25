@@ -108,12 +108,32 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       const video = document.createElement('video');
       video.preload = 'metadata';
       
-      const duration = await new Promise<number>((resolve) => {
-        video.onloadedmetadata = () => {
-          resolve(Math.floor(video.duration));
-        };
-        video.src = URL.createObjectURL(file);
-      });
+      const duration = await Promise.race([
+        new Promise<number>((resolve, reject) => {
+          video.onloadedmetadata = () => {
+            // Handle Infinity duration for webm (Chrome issue)
+            if (video.duration === Infinity || isNaN(video.duration)) {
+              video.currentTime = Number.MAX_SAFE_INTEGER;
+              video.ontimeupdate = () => {
+                video.ontimeupdate = null;
+                video.currentTime = 0;
+                resolve(Math.max(1, Math.floor(video.duration)));
+              };
+            } else {
+              resolve(Math.max(1, Math.floor(video.duration)));
+            }
+          };
+          video.onerror = () => reject(new Error("Failed to load video"));
+          video.src = URL.createObjectURL(file);
+        }),
+        // Timeout fallback - estimate 1 second per 100KB
+        new Promise<number>((resolve) => {
+          setTimeout(() => {
+            const estimatedDuration = Math.max(1, Math.ceil(file.size / 100000));
+            resolve(Math.min(estimatedDuration, maxDuration));
+          }, 3000);
+        })
+      ]);
 
       setVideoDuration(duration);
 
@@ -210,7 +230,8 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
             ref={videoRef}
             autoPlay
             muted
-            className="w-full aspect-video bg-muted rounded-lg"
+            playsInline
+            className="w-full aspect-video bg-muted rounded-lg object-cover"
           />
           <Button
             onClick={stopRecording}
