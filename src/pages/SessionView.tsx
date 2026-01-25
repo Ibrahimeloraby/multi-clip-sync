@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import Navbar from "@/components/Navbar";
 import VideoUpload from "@/components/VideoUpload";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check } from "lucide-react";
+import { Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, QrCode } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -396,12 +397,23 @@ const SessionView = () => {
               {/* Share Time Code */}
               <Card className="glass-card p-6 space-y-4 border-2 border-primary/20">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Share2 className="w-5 h-5 text-primary" />
+                  <QrCode className="w-5 h-5 text-primary" />
                   Share Session
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Share this code with others so they can join and record from their phone
+                  Scan this QR code or share the link to join and record from any phone
                 </p>
+                
+                {/* QR Code */}
+                <div className="flex justify-center p-4 bg-white rounded-lg">
+                  <QRCodeSVG 
+                    value={`${window.location.origin}/join/${session.time_code}`}
+                    size={160}
+                    level="H"
+                    includeMargin={false}
+                  />
+                </div>
+                
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <Input
