@@ -31,7 +31,7 @@ const JoinSession = () => {
     if (code && !user) {
       // Save the code so we can auto-join after auth
       localStorage.setItem(PENDING_SESSION_KEY, code);
-      toast.info("Please sign in quickly to join the session");
+      toast.info("Sign in to start recording");
       navigate('/auth');
       return;
     }
@@ -42,19 +42,22 @@ const JoinSession = () => {
       if (pendingCode) {
         setSessionCode(pendingCode);
         localStorage.removeItem(PENDING_SESSION_KEY);
-        // Auto-join the session
+        // Auto-join the session immediately
+        setAutoJoining(true);
+      } else if (code) {
+        // User is logged in and came from QR code - auto-join immediately
+        setSessionCode(code);
         setAutoJoining(true);
       }
     }
   }, [user, authLoading, code, navigate]);
 
-  // Auto-join when we have user and pending code
+  // Auto-join when we have user and pending code - run immediately
   useEffect(() => {
-    if (autoJoining && user && sessionCode) {
+    if (autoJoining && user && sessionCode && !loading) {
       handleJoinSession();
-      setAutoJoining(false);
     }
-  }, [autoJoining, user, sessionCode]);
+  }, [autoJoining, user, sessionCode, loading]);
 
   const checkProximity = (lat1: number, lon1: number, lat2: number, lon2: number): boolean => {
     const R = 6371e3; // Earth's radius in meters
@@ -104,13 +107,14 @@ const JoinSession = () => {
   const handleJoinSession = async () => {
     if (!sessionCode.trim()) {
       toast.error("Please enter a session code");
+      setAutoJoining(false);
       return;
     }
 
     if (!user) {
       // Save code and redirect to auth
       localStorage.setItem(PENDING_SESSION_KEY, sessionCode);
-      toast.info("Please sign in to join");
+      toast.info("Sign in to start recording");
       navigate('/auth');
       return;
     }
@@ -207,7 +211,7 @@ const JoinSession = () => {
 
       if (participantError) throw participantError;
 
-      toast.success("Joined! Starting camera...");
+      toast.success("Starting camera...");
       navigate(`/session/${session.id}?autoRecord=true`);
 
     } catch (error: any) {
@@ -215,15 +219,17 @@ const JoinSession = () => {
       toast.error(error.message || "Failed to join session");
     } finally {
       setLoading(false);
+      setAutoJoining(false);
     }
   };
 
-  if (authLoading) {
+  // Show loading state when auto-joining
+  if (authLoading || autoJoining) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 rounded-xl gradient-primary animate-pulse mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{autoJoining ? "Joining session..." : "Loading..."}</p>
         </div>
       </div>
     );
