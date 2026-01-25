@@ -21,17 +21,23 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
   const [recording, setRecording] = useState(false);
   const [progress, setProgress] = useState(0);
   const [pendingBlob, setPendingBlob] = useState<Blob | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'processing' | 'uploading' | 'success' | 'error'>('idle');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const uploadFile = useCallback(async (file: Blob, fileName: string) => {
     try {
       setUploading(true);
+      setUploadStatus('processing');
       setProgress(10);
+      
+      console.log("Starting upload process, blob size:", file.size);
 
       // Create video element to get duration
       const video = document.createElement('video');
@@ -89,11 +95,13 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       }
 
       setProgress(50);
+      setUploadStatus('uploading');
 
       // Upload to storage
       const filePath = `${userId}/${sessionId}/${Date.now()}-${fileName}`;
       
-      console.log("Uploading video to storage:", filePath);
+      console.log("Uploading video to storage:", filePath, "size:", file.size);
+      toast.info("Uploading video...");
       
       const { error: uploadError } = await supabase.storage
         .from('videos')
@@ -133,27 +141,58 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       }
 
       setProgress(100);
+      setUploadStatus('success');
       toast.success("Video uploaded successfully!");
       onUploadComplete();
 
     } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload video");
+      setUploadStatus('error');
+      toast.error(error.message || "Failed to upload video. Please try again.");
     } finally {
       setUploading(false);
-      setProgress(0);
+      setTimeout(() => {
+        setProgress(0);
+        setUploadStatus('idle');
+      }, 2000);
     }
   }, [sessionId, userId, deviceId, maxDuration, onUploadComplete]);
 
   // Auto-upload when pendingBlob is set
   useEffect(() => {
     if (pendingBlob && !uploading) {
-      console.log("Pending blob detected, starting upload...");
-      toast.info("Saving recording...");
+      console.log("Pending blob detected, starting upload... size:", pendingBlob.size);
+      if (pendingBlob.size < 1000) {
+        console.warn("Blob too small, likely empty recording");
+        toast.error("Recording was too short or empty. Please try again.");
+        setPendingBlob(null);
+        return;
+      }
+      toast.info("Processing recording...");
       uploadFile(pendingBlob, `recording-${Date.now()}.webm`);
       setPendingBlob(null);
     }
   }, [pendingBlob, uploading, uploadFile]);
+  
+  // Recording timer
+  useEffect(() => {
+    if (recording) {
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(t => t + 1);
+      }, 1000);
+    } else {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, [recording]);
 
   // Auto-start recording when autoStart prop is true
   const autoStartTriggered = useRef(false);
@@ -297,10 +336,14 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
               className="w-full aspect-video bg-black rounded-lg object-cover"
               style={{ minHeight: '200px' }}
             />
-            {/* Recording indicator */}
+            {/* Recording indicator with timer */}
             <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
               <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              REC
+              REC {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+            </div>
+            {/* Time remaining */}
+            <div className="absolute top-3 right-3 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+              {maxDuration - recordingTime}s left
             </div>
           </div>
           <Button
@@ -308,8 +351,11 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
             variant="destructive"
             className="w-full py-6 text-lg"
           >
-            ⏹ Stop Recording
+            ⏹ Stop & Save Recording
           </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            Press stop to save your video. Don't close or navigate away!
+          </p>
         </div>
       )}
 
@@ -338,11 +384,19 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       )}
 
       {uploading && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Progress value={progress} className="w-full" />
-          <p className="text-sm text-muted-foreground text-center">
-            Uploading... {Math.round(progress)}%
-          </p>
+          <div className="text-center">
+            <p className="text-sm font-medium">
+              {uploadStatus === 'processing' && '📹 Processing video...'}
+              {uploadStatus === 'uploading' && '☁️ Uploading to cloud...'}
+              {uploadStatus === 'success' && '✅ Upload complete!'}
+              {uploadStatus === 'error' && '❌ Upload failed'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {Math.round(progress)}% - Please don't close this page
+            </p>
+          </div>
         </div>
       )}
 
