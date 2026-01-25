@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import Navbar from "@/components/Navbar";
 import VideoUpload from "@/components/VideoUpload";
+import MultiAnglePlayer from "@/components/MultiAnglePlayer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, QrCode } from "lucide-react";
+import { Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, QrCode, Film } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -74,6 +75,7 @@ const SessionView = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('my-videos');
+  const [showMultiAnglePlayer, setShowMultiAnglePlayer] = useState(false);
 
   // Filter videos based on view mode - participants only see their own, owners can toggle
   const displayedVideos = viewMode === 'my-videos' 
@@ -264,11 +266,21 @@ const SessionView = () => {
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button onClick={handleShare} variant="secondary" size="sm">
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
+              {isOwner && videos.length >= 2 && (
+                <Button 
+                  onClick={() => setShowMultiAnglePlayer(!showMultiAnglePlayer)} 
+                  variant={showMultiAnglePlayer ? "default" : "secondary"}
+                  size="sm"
+                >
+                  <Film className="w-4 h-4 mr-2" />
+                  {showMultiAnglePlayer ? 'Hide Player' : 'Multi-Angle Player'}
+                </Button>
+              )}
               {isOwner && videos.length > 0 && (
                 <Button onClick={handleExport} className="gradient-primary" size="sm">
                   <Download className="w-4 h-4 mr-2" />
@@ -281,6 +293,11 @@ const SessionView = () => {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Multi-Angle Player for Owner */}
+              {isOwner && showMultiAnglePlayer && videos.length >= 2 && (
+                <MultiAnglePlayer videos={videos} />
+              )}
+
               {/* Video Upload */}
               <VideoUpload
                 sessionId={session.id}
