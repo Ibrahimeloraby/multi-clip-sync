@@ -53,9 +53,9 @@ const Navbar = () => {
                 </DropdownMenu>
               </>
             ) : (
-              <Link to="/auth">
+              <Link to="/join">
                 <Button variant="default" size="sm" className="gradient-primary">
-                  Sign In
+                  Join Session
                 </Button>
               </Link>
             )}
