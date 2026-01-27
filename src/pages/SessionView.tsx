@@ -88,24 +88,8 @@ const SessionView = () => {
       ? videos.filter(v => v.user_id === user?.id)
       : videos;
 
-  useEffect(() => {
-    // Don't redirect if still loading - wait for auth state to fully settle
-    if (authLoading) return;
-    
-    // Give auth state time to propagate (anonymous sign-in needs a moment)
-    const timer = setTimeout(() => {
-      // Re-check auth state after delay
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        // If still no session and not in autoRecord mode, redirect
-        if (!session && !autoRecordMode) {
-          toast.error("Please sign in to view session");
-          navigate('/auth');
-        }
-      });
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [authLoading, navigate, autoRecordMode]);
+  // No redirect to auth - guests are handled via anonymous sign-in
+  // The JoinSession page handles anonymous auth before navigating here
 
   useEffect(() => {
     // Only fetch data when we have session ID

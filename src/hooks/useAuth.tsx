@@ -98,7 +98,7 @@ export const useAuth = () => {
       if (error) throw error;
       
       toast.success("Signed out successfully");
-      navigate('/auth');
+      navigate('/');
     } catch (error: any) {
       console.error("Sign out error:", error);
       toast.error("Error signing out");
