@@ -89,11 +89,16 @@ const SessionView = () => {
       : videos;
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    // Don't redirect if still loading - wait for auth state
+    if (authLoading) return;
+    
+    // If no user AND no autoRecord param, redirect to auth
+    // With autoRecord, we expect QuickJoin to have handled auth
+    if (!user && !autoRecordMode) {
       toast.error("Please sign in to view session");
       navigate('/auth');
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, autoRecordMode]);
 
   useEffect(() => {
     if (user && id) {
