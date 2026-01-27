@@ -46,28 +46,39 @@ const QuickJoin = () => {
       if (authSession?.user) {
         // User already signed in
         userId = authSession.user.id;
+        console.log("User already authenticated:", userId);
       } else {
         // Sign in anonymously
+        console.log("Signing in anonymously...");
         const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
         
         if (anonError || !anonData.user) {
           console.error("Anonymous sign in error:", anonError);
-          toast.error("Failed to join as guest");
+          toast.error("Failed to join as guest. Please try again.");
           navigate('/');
           return;
         }
 
         userId = anonData.user.id;
+        console.log("Anonymous sign in successful:", userId);
+
+        // Wait a moment for auth state to propagate
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Create guest profile
         const deviceId = crypto.randomUUID();
         const guestName = `Guest_${deviceId.slice(0, 6)}`;
 
-        await supabase.from('profiles').insert({
+        const { error: profileError } = await supabase.from('profiles').insert({
           id: userId,
           username: guestName,
           device_id: deviceId
         });
+
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+          // Profile might already exist, continue anyway
+        }
       }
 
       setStatus("Starting camera...");
@@ -89,6 +100,13 @@ const QuickJoin = () => {
         .eq('id', userId)
         .single();
 
+      if (!profile) {
+        console.error("Profile not found for user:", userId);
+        toast.error("Failed to setup profile. Please try again.");
+        navigate('/');
+        return;
+      }
+
       // Check if already a participant
       const { data: existingParticipant } = await supabase
         .from('session_participants')
@@ -97,18 +115,26 @@ const QuickJoin = () => {
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (!existingParticipant && profile) {
+      if (!existingParticipant) {
         // Add as participant
-        await supabase
+        const { error: participantError } = await supabase
           .from('session_participants')
           .insert({
             session_id: session.id,
             user_id: userId,
             device_id: profile.device_id
           });
+
+        if (participantError) {
+          console.error("Participant join error:", participantError);
+          toast.error("Failed to join session");
+          navigate('/');
+          return;
+        }
       }
 
       // Navigate to session with auto-record
+      console.log("Navigating to session:", session.id);
       toast.success("Starting camera...");
       navigate(`/session/${session.id}?autoRecord=true`);
 
