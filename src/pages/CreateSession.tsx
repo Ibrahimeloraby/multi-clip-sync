@@ -8,31 +8,61 @@ import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Video, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+
+const tierLimits = {
+  free: "30 seconds",
+  pro: "2 minutes",
+  enterprise: "10 minutes"
+};
 
 const CreateSession = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
   const [sessionName, setSessionName] = useState("");
   const [tier, setTier] = useState("free");
   const [mode, setMode] = useState<"global" | "proximity">("global");
   const [copied, setCopied] = useState(false);
   const [timeCode, setTimeCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
 
+  // Auto-authenticate anonymously if not logged in
   useEffect(() => {
-    if (!authLoading && !user) {
-      toast.error("Please sign in to create a session");
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
-
-  const tierLimits = {
-    free: "30 seconds",
-    pro: "2 minutes",
-    enterprise: "10 minutes"
-  };
+    const ensureAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        console.log("No user, signing in anonymously for session creation...");
+        const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+        
+        if (anonError) {
+          console.error("Anonymous sign in error:", anonError);
+          toast.error("Failed to initialize. Please refresh.");
+          setInitializing(false);
+          return;
+        }
+        
+        // Wait for auth state to propagate
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Create guest profile
+        const deviceId = crypto.randomUUID();
+        const guestName = `Creator_${deviceId.slice(0, 6)}`;
+        
+        await supabase.from('profiles').insert({
+          id: anonData.user!.id,
+          username: guestName,
+          device_id: deviceId
+        });
+        
+        console.log("Anonymous auth complete for session creator");
+      }
+      
+      setInitializing(false);
+    };
+    
+    ensureAuth();
+  }, []);
 
   const handleCreateSession = async () => {
     if (!sessionName.trim()) {
@@ -40,9 +70,12 @@ const CreateSession = () => {
       return;
     }
 
-    if (!user) {
-      toast.error("Please sign in first");
-      navigate('/auth');
+    // Get current user (may have just been created anonymously)
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    const currentUser = authSession?.user;
+    
+    if (!currentUser) {
+      toast.error("Please wait, initializing...");
       return;
     }
 
@@ -53,7 +86,7 @@ const CreateSession = () => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('device_id')
-        .eq('id', user.id)
+        .eq('id', currentUser.id)
         .single();
 
       if (profileError) throw profileError;
@@ -92,7 +125,7 @@ const CreateSession = () => {
         .from('sessions')
         .insert({
           id: sessionId,
-          owner_id: user.id,
+          owner_id: currentUser.id,
           name: sessionName,
           time_code: generatedTimeCode,
           mode,
@@ -120,7 +153,7 @@ const CreateSession = () => {
         .from('session_participants')
         .insert({
           session_id: session.id,
-          user_id: user.id,
+          user_id: currentUser.id,
           device_id: profile.device_id
         });
 
@@ -163,12 +196,12 @@ const CreateSession = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (authLoading) {
+  if (initializing) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 rounded-xl gradient-primary animate-pulse mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Initializing...</p>
         </div>
       </div>
     );
