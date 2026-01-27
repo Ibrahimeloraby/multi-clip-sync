@@ -96,28 +96,15 @@ const JoinSession = () => {
     setLoading(true);
 
     try {
-      // Find session by time code first
-      const { data: session, error: sessionError } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('time_code', sessionCode.toUpperCase())
-        .eq('is_active', true)
-        .single();
-
-      if (sessionError || !session) {
-        toast.error("Session not found or inactive");
-        setLoading(false);
-        setAutoJoining(false);
-        return;
-      }
-
-      // Get or create user (anonymous if needed)
+      // Ensure we're authenticated first (anonymous if needed)
       let userId: string;
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
       
-      if (user) {
-        userId = user.id;
+      if (existingSession?.user) {
+        userId = existingSession.user.id;
+        console.log("Already authenticated:", userId);
       } else {
-        // Sign in anonymously for guest access
+        // Sign in anonymously first
         console.log("Signing in anonymously...");
         const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
         
@@ -132,19 +119,8 @@ const JoinSession = () => {
         userId = anonData.user.id;
         console.log("Anonymous sign in successful:", userId);
 
-        // Wait longer for auth state to propagate on mobile
+        // Wait for auth state to propagate
         await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Verify the session is now active
-        const { data: { session: verifySession } } = await supabase.auth.getSession();
-        if (!verifySession) {
-          console.error("Auth session not found after sign in");
-          toast.error("Authentication failed. Please try again.");
-          setLoading(false);
-          setAutoJoining(false);
-          return;
-        }
-        console.log("Auth session verified:", verifySession.user.id);
 
         // Create guest profile
         const deviceId = crypto.randomUUID();
@@ -158,10 +134,24 @@ const JoinSession = () => {
         
         if (profileError) {
           console.log("Profile creation result:", profileError.message);
-          // Profile might already exist, continue anyway
         }
       }
 
+      // NOW query for session (we're authenticated)
+      const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('time_code', sessionCode.toUpperCase())
+        .eq('is_active', true)
+        .single();
+
+      if (sessionError || !session) {
+        console.error("Session query error:", sessionError);
+        toast.error("Session not found or inactive");
+        setLoading(false);
+        setAutoJoining(false);
+        return;
+      }
       // Check contributor limit
       const { data: limitCheck } = await supabase
         .rpc('check_contributor_limit', { p_session_id: session.id });
