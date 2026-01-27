@@ -385,8 +385,9 @@ const SessionView = () => {
                 ) : (
                   <div className="space-y-3">
                     {displayedVideos.map((video, index) => (
-                      <div key={video.id} className="glass-card p-4 rounded-lg flex items-center justify-between hover-lift">
-                        <div className="flex items-center gap-3 flex-1">
+                      <div key={video.id} className="glass-card p-4 rounded-lg hover-lift">
+                        <div className="flex items-center gap-3">
+                          {/* Thumbnail */}
                           <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center shrink-0 relative">
                             {video.thumbnail_url ? (
                               <img 
@@ -397,12 +398,13 @@ const SessionView = () => {
                             ) : (
                               <Video className="w-6 h-6 text-muted-foreground" />
                             )}
-                            {/* Live indicator for real-time sync */}
                             <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" title="Synced" />
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{video.profiles?.username || 'Unknown'}</p>
+                          
+                          {/* Video Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium truncate">{video.profiles?.username || 'Unknown'}</p>
                               <span className="text-xs text-muted-foreground">#{index + 1}</span>
                               {video.user_id === user?.id && (
                                 <Badge variant="outline" className="text-xs">You</Badge>
@@ -414,38 +416,42 @@ const SessionView = () => {
                               <span>{new Date(video.uploaded_at).toLocaleTimeString()}</span>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="secondary"
-                            onClick={() => setPlayingVideo(video)}
-                          >
-                            <Play className="w-4 h-4" />
-                          </Button>
-                          {(isOwner || video.user_id === user?.id) && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="destructive">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="glass-card">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Video?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteVideo(video.id)}>
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
+                          
+                          {/* Action Buttons - Always visible */}
+                          <div className="flex gap-2 shrink-0">
+                            <Button 
+                              size="sm" 
+                              variant="secondary"
+                              onClick={() => setPlayingVideo(video)}
+                              className="gap-1"
+                            >
+                              <Play className="w-4 h-4" />
+                              <span className="hidden sm:inline">Play</span>
+                            </Button>
+                            {(isOwner || video.user_id === user?.id) && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="destructive">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="glass-card">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Video?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteVideo(video.id)}>
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
