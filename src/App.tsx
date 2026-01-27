@@ -10,6 +10,7 @@ import QuickJoin from "./pages/QuickJoin";
 import SessionView from "./pages/SessionView";
 import Pricing from "./pages/Pricing";
 import Auth from "./pages/Auth";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/q/:code" element={<QuickJoin />} />
           <Route path="/session/:id" element={<SessionView />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/install" element={<Install />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
