@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const PENDING_SESSION_KEY = 'pending_session_code';
+
 
 const JoinSession = () => {
   const navigate = useNavigate();
@@ -23,34 +23,16 @@ const JoinSession = () => {
   const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null);
   const [autoJoining, setAutoJoining] = useState(false);
 
-  // Save session code and redirect to auth if not logged in
+  // Auto-join if code is in URL
   useEffect(() => {
     if (authLoading) return;
     
-    // If user came from QR code with a code in URL
-    if (code && !user) {
-      // Save the code so we can auto-join after auth
-      localStorage.setItem(PENDING_SESSION_KEY, code);
-      toast.info("Sign in to start recording");
-      navigate('/auth');
-      return;
+    // If we have a code in URL, set it and trigger auto-join
+    if (code) {
+      setSessionCode(code);
+      setAutoJoining(true);
     }
-
-    // If user just logged in and has a pending session
-    if (user) {
-      const pendingCode = localStorage.getItem(PENDING_SESSION_KEY);
-      if (pendingCode) {
-        setSessionCode(pendingCode);
-        localStorage.removeItem(PENDING_SESSION_KEY);
-        // Auto-join the session immediately
-        setAutoJoining(true);
-      } else if (code) {
-        // User is logged in and came from QR code - auto-join immediately
-        setSessionCode(code);
-        setAutoJoining(true);
-      }
-    }
-  }, [user, authLoading, code, navigate]);
+  }, [code, authLoading]);
 
   // Auto-join when we have user and pending code - run immediately
   useEffect(() => {
@@ -111,18 +93,10 @@ const JoinSession = () => {
       return;
     }
 
-    if (!user) {
-      // Save code and redirect to auth
-      localStorage.setItem(PENDING_SESSION_KEY, sessionCode);
-      toast.info("Sign in to start recording");
-      navigate('/auth');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // Find session by time code
+      // Find session by time code first
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .select('*')
@@ -133,7 +107,43 @@ const JoinSession = () => {
       if (sessionError || !session) {
         toast.error("Session not found or inactive");
         setLoading(false);
+        setAutoJoining(false);
         return;
+      }
+
+      // Get or create user (anonymous if needed)
+      let userId: string;
+      
+      if (user) {
+        userId = user.id;
+      } else {
+        // Sign in anonymously for guest access
+        console.log("Signing in anonymously...");
+        const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+        
+        if (anonError || !anonData.user) {
+          console.error("Anonymous sign in error:", anonError);
+          toast.error("Failed to join as guest. Please try again.");
+          setLoading(false);
+          setAutoJoining(false);
+          return;
+        }
+
+        userId = anonData.user.id;
+        console.log("Anonymous sign in successful:", userId);
+
+        // Wait for auth state to propagate
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Create guest profile
+        const deviceId = crypto.randomUUID();
+        const guestName = `Guest_${deviceId.slice(0, 6)}`;
+
+        await supabase.from('profiles').insert({
+          id: userId,
+          username: guestName,
+          device_id: deviceId
+        });
       }
 
       // Check contributor limit
@@ -143,6 +153,7 @@ const JoinSession = () => {
       if (!limitCheck) {
         toast.error("Session has reached maximum contributors. Upgrade to Pro for more slots!");
         setLoading(false);
+        setAutoJoining(false);
         return;
       }
 
@@ -151,13 +162,12 @@ const JoinSession = () => {
         .from('session_participants')
         .select('id')
         .eq('session_id', session.id)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       if (existingParticipant) {
         toast.success("Joining session...");
         navigate(`/session/${session.id}?autoRecord=true`);
-        setLoading(false);
         return;
       }
 
@@ -166,6 +176,7 @@ const JoinSession = () => {
         if (!session.latitude || !session.longitude) {
           toast.error("Session location not set");
           setLoading(false);
+          setAutoJoining(false);
           return;
         }
 
@@ -174,6 +185,7 @@ const JoinSession = () => {
         if (!location) {
           toast.error("Location access required for proximity mode");
           setLoading(false);
+          setAutoJoining(false);
           return;
         }
 
@@ -187,6 +199,7 @@ const JoinSession = () => {
         if (!withinRange) {
           toast.error("You must be within 100m of the session location");
           setLoading(false);
+          setAutoJoining(false);
           return;
         }
       }
@@ -195,17 +208,22 @@ const JoinSession = () => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('device_id')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError || !profile) {
+        toast.error("Failed to load profile");
+        setLoading(false);
+        setAutoJoining(false);
+        return;
+      }
 
       // Add as participant
       const { error: participantError } = await supabase
         .from('session_participants')
         .insert({
           session_id: session.id,
-          user_id: user.id,
+          user_id: userId,
           device_id: profile.device_id
         });
 
