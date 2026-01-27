@@ -108,13 +108,13 @@ const SessionView = () => {
   }, [authLoading, navigate, autoRecordMode]);
 
   useEffect(() => {
-    // Only fetch data when we have both user and session ID
+    // Only fetch data when we have session ID
     // For guests, user may not be available immediately from useAuth
     if (id) {
       const checkAndFetch = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          fetchSessionData();
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        if (authSession?.user) {
+          fetchSessionData(authSession.user.id);
           subscribeToUpdates();
         }
       };
@@ -122,7 +122,14 @@ const SessionView = () => {
     }
   }, [id]);
 
-  const fetchSessionData = async () => {
+  const fetchSessionData = async (userId?: string) => {
+    const currentUserId = userId || user?.id;
+    
+    if (!currentUserId) {
+      console.error("No user ID available");
+      return;
+    }
+    
     try {
       setLoading(true);
 
@@ -135,13 +142,13 @@ const SessionView = () => {
 
       if (sessionError) throw sessionError;
       setSession(sessionData);
-      setIsOwner(sessionData.owner_id === user?.id);
+      setIsOwner(sessionData.owner_id === currentUserId);
 
       // Fetch user profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user!.id)
+        .eq('id', currentUserId)
         .single();
 
       if (profileError) throw profileError;
