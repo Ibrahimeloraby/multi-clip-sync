@@ -1,17 +1,8 @@
 import { Link } from "react-router-dom";
-import { Video, LogOut, User } from "lucide-react";
+import { Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
-  const { user, signOut } = useAuth();
-
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border">
       <div className="container mx-auto px-4 py-4">
@@ -30,35 +21,17 @@ const Navbar = () => {
               </Button>
             </Link>
             
-            {user ? (
-              <>
-                <Link to="/create">
-                  <Button variant="default" size="sm" className="gradient-primary">
-                    Create Session
-                  </Button>
-                </Link>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                      <User className="w-5 h-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="glass-card">
-                    <DropdownMenuItem onClick={signOut}>
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <Link to="/join">
-                <Button variant="default" size="sm" className="gradient-primary">
-                  Join Session
-                </Button>
-              </Link>
-            )}
+            <Link to="/join">
+              <Button variant="secondary" size="sm">
+                Join Session
+              </Button>
+            </Link>
+            
+            <Link to="/create">
+              <Button variant="default" size="sm" className="gradient-primary">
+                Create Session
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

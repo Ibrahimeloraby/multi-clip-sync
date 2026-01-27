@@ -9,7 +9,6 @@ import JoinSession from "./pages/JoinSession";
 import QuickJoin from "./pages/QuickJoin";
 import SessionView from "./pages/SessionView";
 import Pricing from "./pages/Pricing";
-import Auth from "./pages/Auth";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
@@ -23,7 +22,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
           <Route path="/create" element={<CreateSession />} />
           <Route path="/join/:code?" element={<JoinSession />} />
           <Route path="/q/:code" element={<QuickJoin />} />
