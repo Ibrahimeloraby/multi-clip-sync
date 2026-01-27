@@ -574,24 +574,25 @@ const SessionView = () => {
 
       {/* Video Player Dialog */}
       <AlertDialog open={!!playingVideo} onOpenChange={(open) => !open && setPlayingVideo(null)}>
-        <AlertDialogContent className="glass-card max-w-3xl">
-          <AlertDialogHeader>
+        <AlertDialogContent className="glass-card max-w-3xl p-0 overflow-hidden">
+          <AlertDialogHeader className="p-4 pb-0">
             <AlertDialogTitle className="flex items-center gap-2">
               <Play className="w-5 h-5" />
               {playingVideo?.profiles?.username || 'Video'} - {playingVideo?.duration}s
             </AlertDialogTitle>
           </AlertDialogHeader>
-          <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
+          <div className="w-full aspect-video bg-black">
             {playingVideo && (
               <video
-                src={playingVideo.thumbnail_url || ''}
+                src={`https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`}
                 controls
                 autoPlay
-                className="w-full h-full"
+                playsInline
+                className="w-full h-full object-contain"
               />
             )}
           </div>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="p-4 pt-0">
             <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
