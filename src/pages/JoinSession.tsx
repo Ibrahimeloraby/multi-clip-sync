@@ -34,12 +34,12 @@ const JoinSession = () => {
     }
   }, [code, authLoading]);
 
-  // Auto-join when we have user and pending code - run immediately
+  // Auto-join when we have a pending code - don't wait for user (we'll create anonymous user)
   useEffect(() => {
-    if (autoJoining && user && sessionCode && !loading) {
+    if (autoJoining && sessionCode && !loading && !authLoading) {
       handleJoinSession();
     }
-  }, [autoJoining, user, sessionCode, loading]);
+  }, [autoJoining, sessionCode, loading, authLoading]);
 
   const checkProximity = (lat1: number, lon1: number, lat2: number, lon2: number): boolean => {
     const R = 6371e3; // Earth's radius in meters
