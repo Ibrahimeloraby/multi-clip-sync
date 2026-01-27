@@ -105,10 +105,13 @@ export const useAuth = () => {
     }
   };
 
+  const isAnonymous = user?.is_anonymous ?? false;
+
   return {
     user,
     session,
     loading,
+    isAnonymous,
     signUp,
     signIn,
     signOut
