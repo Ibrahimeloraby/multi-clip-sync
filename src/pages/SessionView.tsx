@@ -109,17 +109,35 @@ const SessionView = () => {
 
   useEffect(() => {
     // Only fetch data when we have session ID
-    // For guests, user may not be available immediately from useAuth
-    if (id) {
-      const checkAndFetch = async () => {
-        const { data: { session: authSession } } = await supabase.auth.getSession();
-        if (authSession?.user) {
-          fetchSessionData(authSession.user.id);
-          subscribeToUpdates();
-        }
-      };
-      checkAndFetch();
-    }
+    if (!id) return;
+    
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    const checkAndFetch = async () => {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      
+      if (authSession?.user) {
+        console.log("Auth session found, fetching data for user:", authSession.user.id);
+        fetchSessionData(authSession.user.id);
+        subscribeToUpdates();
+        return true;
+      }
+      
+      attempts++;
+      console.log(`Auth session not found, attempt ${attempts}/${maxAttempts}`);
+      
+      if (attempts < maxAttempts) {
+        // Retry after a short delay
+        setTimeout(checkAndFetch, 500);
+        return false;
+      }
+      
+      console.error("Failed to get auth session after max attempts");
+      return false;
+    };
+    
+    checkAndFetch();
   }, [id]);
 
   const fetchSessionData = async (userId?: string) => {

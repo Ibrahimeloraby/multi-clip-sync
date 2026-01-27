@@ -132,18 +132,34 @@ const JoinSession = () => {
         userId = anonData.user.id;
         console.log("Anonymous sign in successful:", userId);
 
-        // Wait for auth state to propagate
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait longer for auth state to propagate on mobile
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Verify the session is now active
+        const { data: { session: verifySession } } = await supabase.auth.getSession();
+        if (!verifySession) {
+          console.error("Auth session not found after sign in");
+          toast.error("Authentication failed. Please try again.");
+          setLoading(false);
+          setAutoJoining(false);
+          return;
+        }
+        console.log("Auth session verified:", verifySession.user.id);
 
         // Create guest profile
         const deviceId = crypto.randomUUID();
         const guestName = `Guest_${deviceId.slice(0, 6)}`;
 
-        await supabase.from('profiles').insert({
+        const { error: profileError } = await supabase.from('profiles').insert({
           id: userId,
           username: guestName,
           device_id: deviceId
         });
+        
+        if (profileError) {
+          console.log("Profile creation result:", profileError.message);
+          // Profile might already exist, continue anyway
+        }
       }
 
       // Check contributor limit
