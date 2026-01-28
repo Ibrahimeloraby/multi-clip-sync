@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import VideoUpload from "@/components/VideoUpload";
 import MultiAnglePlayer from "@/components/MultiAnglePlayer";
 import ExportModal from "@/components/ExportModal";
+import VideoShareModal from "@/components/VideoShareModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -88,6 +89,7 @@ const SessionView = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('all-videos');
   const [showMultiAnglePlayer, setShowMultiAnglePlayer] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
+  const [sharingVideo, setSharingVideo] = useState<VideoItem | null>(null);
   const [autoRecordMode, setAutoRecordMode] = useState(searchParams.get('autoRecord') === 'true');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showSharePanel, setShowSharePanel] = useState(false);
@@ -740,46 +742,34 @@ const SessionView = () => {
                     Download
                   </Button>
                   
-                  {typeof navigator !== 'undefined' && 'share' in navigator && (
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
-                        try {
-                          const response = await fetch(url);
-                          const blob = await response.blob();
-                          const file = new File([blob], `timecode-${playingVideo.profiles?.username || 'video'}.mp4`, { type: 'video/mp4' });
-                          
-                          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                            await navigator.share({
-                              files: [file],
-                              title: 'Check out this video!',
-                              text: `Multi-angle video from ${session?.name || 'TimeCode'}`,
-                            });
-                          } else {
-                            await navigator.share({
-                              title: 'Check out this video!',
-                              text: `Multi-angle video from ${session?.name || 'TimeCode'}`,
-                              url: url,
-                            });
-                          }
-                        } catch (error: any) {
-                          if (error.name !== 'AbortError') {
-                            toast.error("Sharing failed");
-                          }
-                        }
-                      }}
-                    >
-                      <Share2 className="w-4 h-4 mr-1.5" />
-                      Share
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    className="gradient-primary"
+                    onClick={() => {
+                      setSharingVideo(playingVideo);
+                      setPlayingVideo(null);
+                    }}
+                  >
+                    <Share2 className="w-4 h-4 mr-1.5" />
+                    Share
+                  </Button>
                 </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Video Share Modal */}
+      {sharingVideo && session && (
+        <VideoShareModal
+          open={!!sharingVideo}
+          onOpenChange={(open) => !open && setSharingVideo(null)}
+          videoUrl={`https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${sharingVideo.storage_path}`}
+          videoName={`timecode-${sharingVideo.profiles?.username || 'video'}-${sharingVideo.id.slice(0, 8)}`}
+          sessionName={session.name}
+        />
+      )}
 
       {/* Export Modal */}
       {session && (
