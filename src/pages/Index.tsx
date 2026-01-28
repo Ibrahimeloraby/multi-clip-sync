@@ -1,35 +1,117 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
 import SessionCard from "@/components/SessionCard";
-import { ArrowRight, Play, Users, Clock } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Play, Users, Clock, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import heroImage from "@/assets/hero-bg.jpg";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SessionData {
+  id: string;
+  name: string;
+  time_code: string;
+  tier: string;
+  owner_id: string;
+  is_active: boolean;
+  created_at: string;
+}
 
 const Index = () => {
   const [sessionCode, setSessionCode] = useState("");
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [sessions, setSessions] = useState<SessionData[]>([]);
+  const [participatedSessions, setParticipatedSessions] = useState<SessionData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [videoCounts, setVideoCounts] = useState<Record<string, number>>({});
+  const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
 
-  const mockSessions = [
-    {
-      id: "1",
-      name: "Weekend Vlog Collab",
-      code: "ABC123",
-      participants: 4,
-      videosCount: 12,
-      duration: "30s",
-      tier: "free" as const
-    },
-    {
-      id: "2",
-      name: "Product Launch Video",
-      code: "XYZ789",
-      participants: 8,
-      videosCount: 24,
-      duration: "2m",
-      tier: "pro" as const
+  useEffect(() => {
+    if (user) {
+      fetchUserSessions();
     }
-  ];
+  }, [user]);
+
+  const fetchUserSessions = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      // Fetch owned sessions
+      const { data: ownedData, error: ownedError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (ownedError) throw ownedError;
+      setSessions(ownedData || []);
+
+      // Fetch participated sessions (not owned)
+      const { data: participantData, error: participantError } = await supabase
+        .from('session_participants')
+        .select('session_id')
+        .eq('user_id', user.id);
+
+      if (participantError) throw participantError;
+
+      if (participantData && participantData.length > 0) {
+        const sessionIds = participantData.map(p => p.session_id);
+        const { data: participatedData, error: participatedError } = await supabase
+          .from('sessions')
+          .select('*')
+          .in('id', sessionIds)
+          .neq('owner_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (participatedError) throw participatedError;
+        setParticipatedSessions(participatedData || []);
+      }
+
+      // Fetch video counts for all sessions
+      const allSessionIds = [
+        ...(ownedData || []).map(s => s.id),
+        ...(participantData || []).map(p => p.session_id)
+      ];
+
+      if (allSessionIds.length > 0) {
+        const { data: videos, error: videosError } = await supabase
+          .from('videos')
+          .select('session_id')
+          .in('session_id', allSessionIds);
+
+        if (!videosError && videos) {
+          const counts: Record<string, number> = {};
+          videos.forEach(v => {
+            counts[v.session_id] = (counts[v.session_id] || 0) + 1;
+          });
+          setVideoCounts(counts);
+        }
+
+        // Fetch participant counts
+        const { data: participants, error: participantsError } = await supabase
+          .from('session_participants')
+          .select('session_id')
+          .in('session_id', allSessionIds);
+
+        if (!participantsError && participants) {
+          const counts: Record<string, number> = {};
+          participants.forEach(p => {
+            counts[p.session_id] = (counts[p.session_id] || 0) + 1;
+          });
+          setParticipantCounts(counts);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const allUserSessions = [...sessions, ...participatedSessions];
 
   return (
     <div className="min-h-screen bg-background">
@@ -118,16 +200,37 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Recent Sessions */}
-      {mockSessions.length > 0 && (
+      {/* User's Sessions */}
+      {user && (
         <section className="py-20 px-4">
           <div className="container mx-auto">
-            <h2 className="text-3xl font-bold mb-8 text-center">Recent Sessions</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {mockSessions.map((session) => (
-                <SessionCard key={session.id} {...session} />
-              ))}
-            </div>
+            <h2 className="text-3xl font-bold mb-8 text-center">Your Sessions</h2>
+            
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : allUserSessions.length > 0 ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                {allUserSessions.map((session) => (
+                  <SessionCard 
+                    key={session.id} 
+                    id={session.id}
+                    name={session.name}
+                    code={session.time_code}
+                    participants={participantCounts[session.id] || 0}
+                    videosCount={videoCounts[session.id] || 0}
+                    duration="--"
+                    tier={session.tier as 'free' | 'pro' | 'enterprise'}
+                    isOwner={session.owner_id === user.id}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>No sessions yet. Create your first session!</p>
+              </div>
+            )}
           </div>
         </section>
       )}

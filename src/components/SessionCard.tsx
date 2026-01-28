@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, Video } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Clock, Users, Video, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface SessionCardProps {
@@ -11,9 +12,10 @@ interface SessionCardProps {
   videosCount: number;
   duration: string;
   tier: "free" | "pro" | "enterprise";
+  isOwner?: boolean;
 }
 
-const SessionCard = ({ id, name, code, participants, videosCount, duration, tier }: SessionCardProps) => {
+const SessionCard = ({ id, name, code, participants, videosCount, duration, tier, isOwner }: SessionCardProps) => {
   const tierColors = {
     free: "text-muted-foreground",
     pro: "text-secondary",
@@ -24,7 +26,15 @@ const SessionCard = ({ id, name, code, participants, videosCount, duration, tier
     <Card className="glass-card hover-lift p-6 space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">{name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-foreground">{name}</h3>
+            {isOwner && (
+              <Badge variant="secondary" className="gap-1 text-xs">
+                <Crown className="w-3 h-3" />
+                Owner
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">Code: {code}</p>
         </div>
         <span className={`text-xs font-medium px-3 py-1 rounded-full bg-muted ${tierColors[tier]}`}>
