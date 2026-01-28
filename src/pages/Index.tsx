@@ -30,6 +30,7 @@ const Index = () => {
   const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
+    console.log("Index: Auth state changed, user:", user?.id || "not logged in");
     if (user) {
       fetchUserSessions();
     }
@@ -38,6 +39,7 @@ const Index = () => {
   const fetchUserSessions = async () => {
     if (!user) return;
     setLoading(true);
+    console.log("Fetching sessions for user:", user.id);
     try {
       // Fetch owned sessions
       const { data: ownedData, error: ownedError } = await supabase
@@ -201,39 +203,44 @@ const Index = () => {
       </section>
 
       {/* User's Sessions */}
-      {user && (
-        <section className="py-20 px-4">
-          <div className="container mx-auto">
-            <h2 className="text-3xl font-bold mb-8 text-center">Your Sessions</h2>
-            
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : allUserSessions.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                {allUserSessions.map((session) => (
-                  <SessionCard 
-                    key={session.id} 
-                    id={session.id}
-                    name={session.name}
-                    code={session.time_code}
-                    participants={participantCounts[session.id] || 0}
-                    videosCount={videoCounts[session.id] || 0}
-                    duration="--"
-                    tier={session.tier as 'free' | 'pro' | 'enterprise'}
-                    isOwner={session.owner_id === user.id}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <p>No sessions yet. Create your first session!</p>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+      <section className="py-20 px-4">
+        <div className="container mx-auto">
+          <h2 className="text-3xl font-bold mb-8 text-center">Your Sessions</h2>
+          
+          {!user ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">Sign in to see your sessions and videos</p>
+              <Link to="/join">
+                <Button variant="secondary">Sign In</Button>
+              </Link>
+            </div>
+          ) : loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : allUserSessions.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {allUserSessions.map((session) => (
+                <SessionCard 
+                  key={session.id} 
+                  id={session.id}
+                  name={session.name}
+                  code={session.time_code}
+                  participants={participantCounts[session.id] || 0}
+                  videosCount={videoCounts[session.id] || 0}
+                  duration="--"
+                  tier={session.tier as 'free' | 'pro' | 'enterprise'}
+                  isOwner={session.owner_id === user.id}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <p>No sessions yet. Create your first session!</p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 };
