@@ -4,11 +4,12 @@ import { QRCodeSVG } from "qrcode.react";
 import Navbar from "@/components/Navbar";
 import VideoUpload from "@/components/VideoUpload";
 import MultiAnglePlayer from "@/components/MultiAnglePlayer";
+import ExportModal from "@/components/ExportModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, QrCode, Film } from "lucide-react";
+import { Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, QrCode, Film, Instagram, Twitter, ExternalLink, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -80,6 +81,7 @@ const SessionView = () => {
   const [showMultiAnglePlayer, setShowMultiAnglePlayer] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
   const [autoRecordMode, setAutoRecordMode] = useState(searchParams.get('autoRecord') === 'true');
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Filter videos based on view mode - participants ONLY see their own, owners can toggle
   const displayedVideos = !isOwner 
@@ -226,10 +228,11 @@ const SessionView = () => {
   };
 
   const handleExport = () => {
-    if (session?.tier === 'free') {
-      toast.info("Exporting with watermark (Free tier)");
+    if (videos.length === 0) {
+      toast.error("No videos to export");
+      return;
     }
-    toast.success("Export feature coming soon! This will stitch all videos together.");
+    setShowExportModal(true);
   };
 
   const handleShare = () => {
@@ -578,7 +581,7 @@ const SessionView = () => {
         </div>
       </div>
 
-      {/* Video Player Dialog */}
+      {/* Video Player Dialog with Download & Share */}
       <AlertDialog open={!!playingVideo} onOpenChange={(open) => !open && setPlayingVideo(null)}>
         <AlertDialogContent className="glass-card max-w-3xl p-0 overflow-hidden">
           <AlertDialogHeader className="p-4 pb-0">
@@ -598,11 +601,102 @@ const SessionView = () => {
               />
             )}
           </div>
+          <div className="p-4 pt-2 space-y-3">
+            {/* Download & Share buttons */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  if (!playingVideo) return;
+                  const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `timecode-${playingVideo.profiles?.username || 'video'}-${playingVideo.id.slice(0, 8)}.mp4`;
+                  link.target = '_blank';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  toast.success("Download started!");
+                }}
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo?.storage_path}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success("Video link copied!");
+                }}
+                className="gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                Copy Link
+              </Button>
+            </div>
+            
+            {/* Social sharing */}
+            <div className="border-t border-border pt-3">
+              <p className="text-xs text-muted-foreground mb-2">Share to social:</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo?.storage_path}`;
+                    window.open(`https://twitter.com/intent/tweet?text=Check out this multi-angle video!&url=${encodeURIComponent(url)}`, '_blank');
+                  }}
+                  className="gap-2"
+                >
+                  <Twitter className="w-4 h-4" />
+                  X/Twitter
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    toast.info("To share on Instagram: Download the video first, then upload it in the Instagram app");
+                  }}
+                  className="gap-2"
+                >
+                  <Instagram className="w-4 h-4" />
+                  Instagram
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    toast.info("To share on TikTok: Download the video first, then upload it in the TikTok app");
+                  }}
+                  className="gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  TikTok
+                </Button>
+              </div>
+            </div>
+          </div>
           <AlertDialogFooter className="p-4 pt-0">
             <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Export Modal */}
+      {session && (
+        <ExportModal
+          open={showExportModal}
+          onOpenChange={setShowExportModal}
+          sessionId={session.id}
+          sessionName={session.name}
+          tier={session.tier}
+          videos={videos}
+        />
+      )}
     </div>
   );
 };
