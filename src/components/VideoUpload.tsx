@@ -1,10 +1,11 @@
-import { Upload, Video as VideoIcon, SwitchCamera } from "lucide-react";
+import { Upload, Video as VideoIcon, SwitchCamera, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import VideoTrimmer from "./VideoTrimmer";
 
 interface VideoUploadProps {
   sessionId: string;
@@ -24,6 +25,8 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'processing' | 'uploading' | 'success' | 'error'>('idle');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment'); // Default to back camera
+  const [showTrimmer, setShowTrimmer] = useState(false);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -274,8 +277,14 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
           videoRef.current.srcObject = null;
         }
 
-        // Set pending blob to trigger upload via useEffect
-        setPendingBlob(blob);
+        // Check if video needs trimming (longer than max duration or user might want to trim)
+        // Show trimmer if recording was successful
+        if (blob.size > 1000) {
+          setRecordedBlob(blob);
+          setShowTrimmer(true);
+        } else {
+          toast.error("Recording was too short or empty. Please try again.");
+        }
       };
 
       // Start recording with timeslice for better compatibility
@@ -318,15 +327,42 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         toast.error("Please select a video file");
         return;
       }
-      uploadFile(file, file.name);
+      // Show trimmer for uploaded files too
+      setRecordedBlob(file);
+      setShowTrimmer(true);
     }
+  };
+
+  const handleTrimComplete = (trimmedBlob: Blob) => {
+    setShowTrimmer(false);
+    setRecordedBlob(null);
+    setPendingBlob(trimmedBlob);
+  };
+
+  const handleTrimCancel = () => {
+    setShowTrimmer(false);
+    setRecordedBlob(null);
+    toast.info("Recording discarded");
   };
 
   return (
     <Card className="glass-card p-6 space-y-4">
-      <h2 className="text-xl font-semibold">Record or Upload Video</h2>
+      <h2 className="text-xl font-semibold flex items-center gap-2">
+        {showTrimmer ? <Scissors className="w-5 h-5" /> : null}
+        {showTrimmer ? "Trim Your Recording" : "Record or Upload Video"}
+      </h2>
       
-      {recording && (
+      {/* Video Trimmer */}
+      {showTrimmer && recordedBlob && (
+        <VideoTrimmer
+          videoBlob={recordedBlob}
+          maxDuration={maxDuration}
+          onTrimComplete={handleTrimComplete}
+          onCancel={handleTrimCancel}
+        />
+      )}
+      
+      {recording && !showTrimmer && (
         <div className="space-y-4">
           <div className="relative">
             <video
@@ -360,7 +396,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         </div>
       )}
 
-      {!recording && !uploading && (
+      {!recording && !uploading && !showTrimmer && (
         <div className="space-y-4">
           {/* Camera toggle */}
           <div className="flex items-center justify-center gap-2">
