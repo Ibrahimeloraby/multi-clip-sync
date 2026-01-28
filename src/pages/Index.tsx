@@ -207,14 +207,7 @@ const Index = () => {
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold mb-8 text-center">Your Sessions</h2>
           
-          {!user ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">Sign in to see your sessions and videos</p>
-              <Link to="/join">
-                <Button variant="secondary">Sign In</Button>
-              </Link>
-            </div>
-          ) : loading ? (
+          {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
@@ -230,13 +223,13 @@ const Index = () => {
                   videosCount={videoCounts[session.id] || 0}
                   duration="--"
                   tier={session.tier as 'free' | 'pro' | 'enterprise'}
-                  isOwner={session.owner_id === user.id}
+                  isOwner={user ? session.owner_id === user.id : false}
                 />
               ))}
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
-              <p>No sessions yet. Create your first session!</p>
+              <p>No sessions yet. Create your first session or join one with a code!</p>
             </div>
           )}
         </div>
