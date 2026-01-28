@@ -1,4 +1,4 @@
-import { Upload, Video as VideoIcon } from "lucide-react";
+import { Upload, Video as VideoIcon, SwitchCamera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -23,6 +23,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
   const [pendingBlob, setPendingBlob] = useState<Blob | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'processing' | 'uploading' | 'success' | 'error'>('idle');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment'); // Default to back camera
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -212,7 +213,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       // Request camera and microphone permissions
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: "user", 
+          facingMode: facingMode, 
           width: { ideal: 1280 }, 
           height: { ideal: 720 } 
         }, 
@@ -334,7 +335,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
               muted
               playsInline
               className="w-full aspect-video bg-black rounded-lg object-cover"
-              style={{ minHeight: '200px' }}
+              style={{ minHeight: '200px', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
             />
             {/* Recording indicator with timer */}
             <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -360,26 +361,42 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       )}
 
       {!recording && !uploading && (
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            onClick={startRecording}
-            variant="secondary"
-            className="flex flex-col items-center py-8"
-          >
-            <VideoIcon className="w-8 h-8 mb-2" />
-            <span>Record Video</span>
-            <span className="text-xs text-muted-foreground mt-1">Max {maxDuration}s</span>
-          </Button>
+        <div className="space-y-4">
+          {/* Camera toggle */}
+          <div className="flex items-center justify-center gap-2">
+            <span className={`text-sm ${facingMode === 'user' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Front</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFacingMode(f => f === 'user' ? 'environment' : 'user')}
+              className="px-3"
+            >
+              <SwitchCamera className="w-4 h-4" />
+            </Button>
+            <span className={`text-sm ${facingMode === 'environment' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Back</span>
+          </div>
           
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            variant="secondary"
-            className="flex flex-col items-center py-8"
-          >
-            <Upload className="w-8 h-8 mb-2" />
-            <span>Upload Video</span>
-            <span className="text-xs text-muted-foreground mt-1">From device</span>
-          </Button>
+          <div className="grid grid-cols-2 gap-4">
+            <Button
+              onClick={startRecording}
+              variant="secondary"
+              className="flex flex-col items-center py-8"
+            >
+              <VideoIcon className="w-8 h-8 mb-2" />
+              <span>Record Video</span>
+              <span className="text-xs text-muted-foreground mt-1">Max {maxDuration}s</span>
+            </Button>
+            
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              variant="secondary"
+              className="flex flex-col items-center py-8"
+            >
+              <Upload className="w-8 h-8 mb-2" />
+              <span>Upload Video</span>
+              <span className="text-xs text-muted-foreground mt-1">From device</span>
+            </Button>
+          </div>
         </div>
       )}
 
