@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, 
-  Film, Clock, ChevronRight, Link as LinkIcon
+  Film, Clock, ChevronRight, Link as LinkIcon, CheckCircle2, Lock
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +40,7 @@ interface Session {
   tier: string;
   max_video_length: number;
   owner_id: string;
+  is_active: boolean;
 }
 
 interface Profile {
@@ -197,6 +198,40 @@ const SessionView = () => {
     const shareUrl = `${window.location.origin}/q/${session?.time_code}`;
     navigator.clipboard.writeText(shareUrl);
     toast.success("Join link copied!");
+  };
+
+  const handleCompleteSession = async () => {
+    if (!session) return;
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ is_active: false })
+        .eq('id', session.id);
+      
+      if (error) throw error;
+      
+      setSession({ ...session, is_active: false });
+      toast.success("Session completed! Videos are saved forever.");
+    } catch (error: any) {
+      toast.error("Failed to complete session");
+    }
+  };
+
+  const handleReopenSession = async () => {
+    if (!session) return;
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ is_active: true })
+        .eq('id', session.id);
+      
+      if (error) throw error;
+      
+      setSession({ ...session, is_active: true });
+      toast.success("Session reopened!");
+    } catch (error: any) {
+      toast.error("Failed to reopen session");
+    }
   };
 
   if (loading || authLoading) {
@@ -479,6 +514,22 @@ const SessionView = () => {
               </h3>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Status</dt>
+                  <dd className="flex items-center gap-1.5">
+                    {session.is_active ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="text-green-600">Active</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-primary">Completed</span>
+                      </>
+                    )}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
                   <dt className="text-muted-foreground">Max clip</dt>
                   <dd>{session.max_video_length}s</dd>
                 </div>
@@ -492,11 +543,54 @@ const SessionView = () => {
                 </div>
               </dl>
               
+              {isOwner && (
+                <div className="mt-4 space-y-2">
+                  {session.is_active ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Complete Session
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Complete this session?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will close the session to new participants. All videos will remain accessible forever. You can reopen it anytime.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleCompleteSession} className="gradient-primary">
+                            Complete Session
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleReopenSession}
+                    >
+                      <Lock className="w-4 h-4 mr-2" />
+                      Reopen Session
+                    </Button>
+                  )}
+                </div>
+              )}
+              
               {session.tier === 'free' && participants.length >= 3 && (
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="w-full mt-4"
+                  variant="ghost"
+                  className="w-full mt-2 text-xs"
                   onClick={() => navigate('/pricing')}
                 >
                   Upgrade to Pro
@@ -504,32 +598,44 @@ const SessionView = () => {
               )}
             </div>
 
-            {/* Quick Invite */}
-            <div className="p-4 rounded-lg bg-muted/30">
-              <p className="text-sm font-medium mb-3">Invite others</p>
-              <div className="space-y-2">
-                <button 
-                  onClick={copyTimeCode}
-                  className="w-full flex items-center justify-between p-2 rounded bg-background hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div>
-                    <p className="text-xs text-muted-foreground">Session Code</p>
-                    <p className="font-mono font-semibold">{session.time_code}</p>
-                  </div>
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
-                </button>
-                <button 
-                  onClick={copyShareLink}
-                  className="w-full flex items-center justify-between p-2 rounded bg-background hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div>
-                    <p className="text-xs text-muted-foreground">Magic Link</p>
-                    <p className="text-sm truncate max-w-[140px]">{window.location.origin}/q/{session.time_code}</p>
-                  </div>
-                  <LinkIcon className="w-4 h-4 text-muted-foreground shrink-0" />
-                </button>
+            {/* Quick Invite - only show when session is active */}
+            {session.is_active ? (
+              <div className="p-4 rounded-lg bg-muted/30">
+                <p className="text-sm font-medium mb-3">Invite others</p>
+                <div className="space-y-2">
+                  <button 
+                    onClick={copyTimeCode}
+                    className="w-full flex items-center justify-between p-2 rounded bg-background hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <div>
+                      <p className="text-xs text-muted-foreground">Session Code</p>
+                      <p className="font-mono font-semibold">{session.time_code}</p>
+                    </div>
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+                  </button>
+                  <button 
+                    onClick={copyShareLink}
+                    className="w-full flex items-center justify-between p-2 rounded bg-background hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <div>
+                      <p className="text-xs text-muted-foreground">Magic Link</p>
+                      <p className="text-sm truncate max-w-[140px]">{window.location.origin}/q/{session.time_code}</p>
+                    </div>
+                    <LinkIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 text-primary mb-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <p className="text-sm font-medium">Session Completed</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Videos are saved permanently. Reopen to allow new participants.
+                </p>
+              </div>
+            )}
           </aside>
         </div>
       </div>
