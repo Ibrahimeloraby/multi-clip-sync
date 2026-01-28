@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { QRCodeSVG } from "qrcode.react";
 import Navbar from "@/components/Navbar";
 import VideoUpload from "@/components/VideoUpload";
 import MultiAnglePlayer from "@/components/MultiAnglePlayer";
@@ -10,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, 
-  QrCode, Film, Clock, ChevronRight
+  Film, Clock, ChevronRight, Link as LinkIcon
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -276,7 +275,7 @@ const SessionView = () => {
                 onClick={() => setShowSharePanel(true)}
                 className="h-9"
               >
-                <QrCode className="w-4 h-4 mr-2" />
+                <Share2 className="w-4 h-4 mr-2" />
                 Invite
               </Button>
               {isOwner && videos.length > 0 && (
@@ -497,28 +496,28 @@ const SessionView = () => {
 
             {/* Quick Invite */}
             <div className="p-4 rounded-lg bg-muted/30">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium">Invite link</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={copyShareLink}
-                  className="h-7 text-xs"
+              <p className="text-sm font-medium mb-3">Invite others</p>
+              <div className="space-y-2">
+                <button 
+                  onClick={copyTimeCode}
+                  className="w-full flex items-center justify-between p-2 rounded bg-background hover:bg-muted/50 transition-colors text-left"
                 >
-                  {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
-                  Copy
-                </Button>
-              </div>
-              <div 
-                onClick={() => setShowSharePanel(true)}
-                className="p-3 bg-white rounded cursor-pointer hover:opacity-90 transition-opacity"
-              >
-                <QRCodeSVG 
-                  value={`${window.location.origin}/q/${session.time_code}`}
-                  size={120}
-                  level="L"
-                  className="w-full h-auto"
-                />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Session Code</p>
+                    <p className="font-mono font-semibold">{session.time_code}</p>
+                  </div>
+                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+                </button>
+                <button 
+                  onClick={copyShareLink}
+                  className="w-full flex items-center justify-between p-2 rounded bg-background hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div>
+                    <p className="text-xs text-muted-foreground">Magic Link</p>
+                    <p className="text-sm truncate max-w-[140px]">{window.location.origin}/q/{session.time_code}</p>
+                  </div>
+                  <LinkIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                </button>
               </div>
             </div>
           </aside>
@@ -527,36 +526,56 @@ const SessionView = () => {
 
       {/* Share Panel Modal */}
       <Dialog open={showSharePanel} onOpenChange={setShowSharePanel}>
-        <DialogContent className="max-w-xs p-6">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="p-4 bg-white rounded-lg">
-              <QRCodeSVG 
-                value={`${window.location.origin}/q/${session.time_code}`}
-                size={180}
-                level="H"
-              />
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Invite to Session</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1.5 block">Session Code</label>
+              <div className="flex gap-2">
+                <Input 
+                  value={session.time_code} 
+                  readOnly 
+                  className="font-mono text-lg font-semibold tracking-wider"
+                />
+                <Button variant="outline" size="icon" onClick={copyTimeCode}>
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">Others can enter this code at the join page</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-semibold font-mono tracking-widest">{session.time_code}</p>
-              <p className="text-sm text-muted-foreground mt-1">Scan or enter code to join</p>
+            
+            <div className="border-t pt-4">
+              <label className="text-xs text-muted-foreground mb-1.5 block">Magic Link</label>
+              <div className="flex gap-2">
+                <Input 
+                  value={`${window.location.origin}/q/${session.time_code}`} 
+                  readOnly 
+                  className="text-sm"
+                />
+                <Button variant="outline" size="icon" onClick={copyShareLink}>
+                  <LinkIcon className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">Share this link to let others join instantly</p>
             </div>
-            <div className="flex gap-2 w-full">
+            
+            {typeof navigator !== 'undefined' && 'share' in navigator && (
               <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={copyTimeCode}
+                className="w-full" 
+                onClick={() => {
+                  navigator.share({
+                    title: `Join ${session.name}`,
+                    text: `Join my TimeCode session with code: ${session.time_code}`,
+                    url: `${window.location.origin}/q/${session.time_code}`,
+                  });
+                }}
               >
-                {copied ? <Check className="w-4 h-4 mr-1.5" /> : <Copy className="w-4 h-4 mr-1.5" />}
-                Code
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
               </Button>
-              <Button 
-                className="flex-1"
-                onClick={copyShareLink}
-              >
-                <Share2 className="w-4 h-4 mr-1.5" />
-                Link
-              </Button>
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
