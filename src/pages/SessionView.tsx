@@ -398,8 +398,18 @@ const SessionView = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium truncate">{video.profiles?.username || 'Unknown'}</p>
+                          {video.user_id === session.owner_id ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                              <Crown className="w-2.5 h-2.5" />
+                              owner
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                              guest
+                            </span>
+                          )}
                           {video.user_id === user?.id && (
-                            <span className="text-[10px] text-primary">you</span>
+                            <span className="text-[10px] text-primary font-medium">• you</span>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
