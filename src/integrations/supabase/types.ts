@@ -259,6 +259,7 @@ export type Database = {
         Args: { device_uuid: string; session_uuid: string }
         Returns: string
       }
+      get_user_session_ids: { Args: { p_user_id: string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
