@@ -1,6 +1,5 @@
 import { Upload, Video as VideoIcon, SwitchCamera, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -346,108 +345,109 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
   };
 
   return (
-    <Card className="glass-card p-6 space-y-4">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
-        {showTrimmer ? <Scissors className="w-5 h-5" /> : null}
-        {showTrimmer ? "Trim Your Recording" : "Record or Upload Video"}
-      </h2>
-      
+    <div className="space-y-4">
       {/* Video Trimmer */}
       {showTrimmer && recordedBlob && (
-        <VideoTrimmer
-          videoBlob={recordedBlob}
-          maxDuration={maxDuration}
-          onTrimComplete={handleTrimComplete}
-          onCancel={handleTrimCancel}
-        />
+        <div className="bg-card rounded-xl border border-border p-4">
+          <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+            <Scissors className="w-4 h-4 text-primary" />
+            Trim Your Recording
+          </h3>
+          <VideoTrimmer
+            videoBlob={recordedBlob}
+            maxDuration={maxDuration}
+            onTrimComplete={handleTrimComplete}
+            onCancel={handleTrimCancel}
+          />
+        </div>
       )}
       
       {recording && !showTrimmer && (
-        <div className="space-y-4">
-          <div className="relative">
+        <div className="space-y-3">
+          <div className="relative rounded-xl overflow-hidden">
             <video
               ref={videoRef}
               autoPlay
               muted
               playsInline
-              className="w-full aspect-video bg-black rounded-lg object-cover"
-              style={{ minHeight: '200px', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+              className="w-full aspect-video bg-black object-cover"
+              style={{ minHeight: '180px', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
             />
-            {/* Recording indicator with timer */}
-            <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              REC {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+            {/* Recording indicator */}
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-destructive text-destructive-foreground px-2.5 py-1 rounded-full text-xs font-medium">
+              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+              {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
             </div>
-            {/* Time remaining */}
-            <div className="absolute top-3 right-3 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-              {maxDuration - recordingTime}s left
+            <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-full text-xs">
+              {maxDuration - recordingTime}s
             </div>
           </div>
           <Button
             onClick={stopRecording}
             variant="destructive"
-            className="w-full py-6 text-lg"
+            className="w-full"
           >
-            ⏹ Stop & Save Recording
+            Stop Recording
           </Button>
-          <p className="text-xs text-center text-muted-foreground">
-            Press stop to save your video. Don't close or navigate away!
-          </p>
         </div>
       )}
 
       {!recording && !uploading && !showTrimmer && (
-        <div className="space-y-4">
-          {/* Camera toggle */}
-          <div className="flex items-center justify-center gap-2">
-            <span className={`text-sm ${facingMode === 'user' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Front</span>
-            <Button
-              variant="outline"
-              size="sm"
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium">Add Video</h3>
+            <button
               onClick={() => setFacingMode(f => f === 'user' ? 'environment' : 'user')}
-              className="px-3"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              <SwitchCamera className="w-4 h-4" />
-            </Button>
-            <span className={`text-sm ${facingMode === 'environment' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Back</span>
+              <SwitchCamera className="w-3.5 h-3.5" />
+              {facingMode === 'user' ? 'Front' : 'Back'}
+            </button>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <Button
+          <div className="grid grid-cols-2 gap-3">
+            <button
               onClick={startRecording}
-              variant="secondary"
-              className="flex flex-col items-center py-8"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-colors group"
             >
-              <VideoIcon className="w-8 h-8 mb-2" />
-              <span>Record Video</span>
-              <span className="text-xs text-muted-foreground mt-1">Max {maxDuration}s</span>
-            </Button>
+              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow relative">
+                <VideoIcon className="w-5 h-5 text-primary-foreground" />
+                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-destructive border border-background" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">Record</p>
+                <p className="text-[10px] text-muted-foreground">Max {maxDuration}s</p>
+              </div>
+            </button>
             
-            <Button
+            <button
               onClick={() => fileInputRef.current?.click()}
-              variant="secondary"
-              className="flex flex-col items-center py-8"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/50 hover:bg-muted border border-border transition-colors group"
             >
-              <Upload className="w-8 h-8 mb-2" />
-              <span>Upload Video</span>
-              <span className="text-xs text-muted-foreground mt-1">From device</span>
-            </Button>
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center group-hover:bg-muted-foreground/10 transition-colors">
+                <Upload className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">Upload</p>
+                <p className="text-[10px] text-muted-foreground">From device</p>
+              </div>
+            </button>
           </div>
         </div>
       )}
 
       {uploading && (
-        <div className="space-y-3">
-          <Progress value={progress} className="w-full" />
+        <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+          <Progress value={progress} className="w-full h-2" />
           <div className="text-center">
             <p className="text-sm font-medium">
-              {uploadStatus === 'processing' && '📹 Processing video...'}
-              {uploadStatus === 'uploading' && '☁️ Uploading to cloud...'}
-              {uploadStatus === 'success' && '✅ Upload complete!'}
-              {uploadStatus === 'error' && '❌ Upload failed'}
+              {uploadStatus === 'processing' && 'Processing...'}
+              {uploadStatus === 'uploading' && 'Uploading...'}
+              {uploadStatus === 'success' && 'Done!'}
+              {uploadStatus === 'error' && 'Failed'}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {Math.round(progress)}% - Please don't close this page
+            <p className="text-xs text-muted-foreground">
+              {Math.round(progress)}%
             </p>
           </div>
         </div>
@@ -460,7 +460,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         onChange={handleFileSelect}
         className="hidden"
       />
-    </Card>
+    </div>
   );
 };
 
