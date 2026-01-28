@@ -642,7 +642,51 @@ const SessionView = () => {
             {/* Social sharing */}
             <div className="border-t border-border pt-3">
               <p className="text-xs text-muted-foreground mb-2">Share to social:</p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                {/* Native Share - works on mobile to share directly to any app */}
+                {typeof navigator !== 'undefined' && 'share' in navigator && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={async () => {
+                      if (!playingVideo) return;
+                      const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
+                      
+                      try {
+                        // Try to share the video file directly (works on mobile)
+                        const response = await fetch(url);
+                        const blob = await response.blob();
+                        const file = new File([blob], `timecode-${playingVideo.profiles?.username || 'video'}.mp4`, { type: 'video/mp4' });
+                        
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                          await navigator.share({
+                            files: [file],
+                            title: 'Check out this video!',
+                            text: `Multi-angle video from ${session?.name || 'TimeCode'}`,
+                          });
+                          toast.success("Shared successfully!");
+                        } else {
+                          // Fallback to URL sharing if file sharing not supported
+                          await navigator.share({
+                            title: 'Check out this video!',
+                            text: `Multi-angle video from ${session?.name || 'TimeCode'}`,
+                            url: url,
+                          });
+                          toast.success("Shared successfully!");
+                        }
+                      } catch (error: any) {
+                        if (error.name !== 'AbortError') {
+                          console.error('Share error:', error);
+                          toast.error("Sharing failed. Try downloading instead.");
+                        }
+                      }
+                    }}
+                    className="gap-2 gradient-primary"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share to App
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -659,7 +703,7 @@ const SessionView = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    toast.info("To share on Instagram: Download the video first, then upload it in the Instagram app");
+                    toast.info("To share on Instagram: Use 'Share to App' button or download the video first");
                   }}
                   className="gap-2"
                 >
@@ -670,7 +714,7 @@ const SessionView = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    toast.info("To share on TikTok: Download the video first, then upload it in the TikTok app");
+                    toast.info("To share on TikTok: Use 'Share to App' button or download the video first");
                   }}
                   className="gap-2"
                 >
