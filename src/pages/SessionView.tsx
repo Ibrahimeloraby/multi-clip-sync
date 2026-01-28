@@ -10,8 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, 
-  QrCode, Film, Instagram, Twitter, ExternalLink, Clock, Layers, 
-  ChevronRight, X
+  QrCode, Film, Clock, ChevronRight
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -233,57 +232,56 @@ const SessionView = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 pt-20 pb-24">
-        {/* Compact Header */}
-        <header className="py-6 animate-fade-in">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight">{session.name}</h1>
+      <div className="container mx-auto px-4 pt-20 pb-24 max-w-6xl">
+        {/* Clean Header */}
+        <header className="py-8 animate-fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-semibold">{session.name}</h1>
                 {isOwner && (
-                  <Badge className="bg-primary/20 text-primary border-0 text-xs">
+                  <Badge variant="secondary" className="text-xs font-normal">
                     <Crown className="w-3 h-3 mr-1" />
                     Owner
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <span className="font-mono bg-muted/50 px-2 py-0.5 rounded">{session.time_code}</span>
-                <span className="flex items-center gap-1">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <button 
+                  onClick={copyTimeCode}
+                  className="font-mono text-foreground/80 hover:text-foreground transition-colors"
+                >
+                  {session.time_code}
+                </button>
+                <span className="w-px h-3 bg-border" />
+                <span className="flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5" />
                   {participants.length}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Layers className="w-3.5 h-3.5" />
-                  {videos.length} clips
+                <span className="flex items-center gap-1.5">
+                  <Film className="w-3.5 h-3.5" />
+                  {videos.length}
                 </span>
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
-                  {totalDuration}s
+                  {Math.floor(totalDuration / 60)}:{(totalDuration % 60).toString().padStart(2, '0')}
                 </span>
               </div>
             </div>
             
             <div className="flex items-center gap-2">
               <Button 
-                variant="ghost" 
-                size="icon"
+                variant="outline" 
+                size="sm"
                 onClick={() => setShowSharePanel(true)}
-                className="rounded-full"
+                className="h-9"
               >
-                <QrCode className="w-5 h-5" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={copyShareLink}
-                className="rounded-full"
-              >
-                <Share2 className="w-5 h-5" />
+                <QrCode className="w-4 h-4 mr-2" />
+                Invite
               </Button>
               {isOwner && videos.length > 0 && (
-                <Button onClick={handleExport} size="sm" className="gradient-primary rounded-full px-4">
-                  <Download className="w-4 h-4 mr-1.5" />
+                <Button onClick={handleExport} size="sm" className="h-9 gradient-primary">
+                  <Download className="w-4 h-4 mr-2" />
                   Export
                 </Button>
               )}
@@ -292,25 +290,25 @@ const SessionView = () => {
         </header>
 
         {/* Main Layout */}
-        <div className="grid lg:grid-cols-12 gap-6 animate-fade-in">
+        <div className="grid lg:grid-cols-3 gap-8 animate-fade-in">
           {/* Main Content Area */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             {/* Multi-Angle Player Toggle */}
             {isOwner && videos.length >= 2 && (
               <button
                 onClick={() => setShowMultiAnglePlayer(!showMultiAnglePlayer)}
-                className="w-full p-4 rounded-2xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 flex items-center justify-between hover:from-primary/20 hover:to-secondary/20 transition-all group"
+                className="w-full p-4 rounded-xl bg-card border border-border flex items-center justify-between hover:border-primary/30 transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-                    <Film className="w-5 h-5 text-primary-foreground" />
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Film className="w-4 h-4 text-primary" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium">Multi-Angle Player</p>
-                    <p className="text-xs text-muted-foreground">View all {videos.length} angles synced</p>
+                    <p className="text-sm font-medium">Multi-Angle Player</p>
+                    <p className="text-xs text-muted-foreground">{videos.length} synced angles</p>
                   </div>
                 </div>
-                <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${showMultiAnglePlayer ? 'rotate-90' : 'group-hover:translate-x-1'}`} />
+                <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${showMultiAnglePlayer ? 'rotate-90' : 'group-hover:translate-x-0.5'}`} />
               </button>
             )}
 
@@ -334,26 +332,27 @@ const SessionView = () => {
             {/* Videos List */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">
-                  {!isOwner ? 'Your Videos' : viewMode === 'my-videos' ? 'Your Videos' : 'All Videos'}
+                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {!isOwner ? 'Your Clips' : viewMode === 'my-videos' ? 'Your Clips' : 'All Clips'}
                 </h2>
                 {isOwner && (
-                  <div className="flex bg-muted/50 rounded-full p-1">
+                  <div className="flex text-sm">
                     <button
                       onClick={() => setViewMode('my-videos')}
-                      className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
+                      className={`px-3 py-1 transition-colors ${
                         viewMode === 'my-videos' 
-                          ? 'bg-background text-foreground shadow-sm' 
+                          ? 'text-foreground' 
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       Mine
                     </button>
+                    <span className="text-border">|</span>
                     <button
                       onClick={() => setViewMode('all-videos')}
-                      className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
+                      className={`px-3 py-1 transition-colors ${
                         viewMode === 'all-videos' 
-                          ? 'bg-background text-foreground shadow-sm' 
+                          ? 'text-foreground' 
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
@@ -364,86 +363,72 @@ const SessionView = () => {
               </div>
               
               {displayedVideos.length === 0 ? (
-                <div className="text-center py-16 rounded-2xl border border-dashed border-border">
-                  <Video className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
-                  <p className="text-muted-foreground text-sm">No videos yet</p>
-                  <p className="text-muted-foreground/60 text-xs mt-1">Start recording to add your angle</p>
+                <div className="text-center py-12 border border-dashed border-border rounded-lg">
+                  <Video className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">No clips yet</p>
                 </div>
               ) : (
-                <div className="grid gap-3">
+                <div className="space-y-2">
                   {displayedVideos.map((video, index) => (
                     <div 
                       key={video.id} 
-                      className="group p-3 rounded-xl bg-card/50 border border-border/50 hover:bg-card hover:border-border transition-all"
+                      className="group flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-muted/30 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        {/* Thumbnail */}
-                        <button 
-                          onClick={() => setPlayingVideo(video)}
-                          className="relative w-20 h-14 bg-muted rounded-lg overflow-hidden shrink-0 group/thumb"
-                        >
-                          {video.thumbnail_url ? (
-                            <img 
-                              src={video.thumbnail_url} 
-                              alt="Thumbnail"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Video className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
-                            <Play className="w-6 h-6 text-white" fill="white" />
+                      {/* Thumbnail */}
+                      <button 
+                        onClick={() => setPlayingVideo(video)}
+                        className="relative w-16 h-10 bg-muted rounded overflow-hidden shrink-0"
+                      >
+                        {video.thumbnail_url ? (
+                          <img 
+                            src={video.thumbnail_url} 
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Video className="w-4 h-4 text-muted-foreground/50" />
                           </div>
-                          <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded">
-                            {video.duration}s
-                          </div>
-                        </button>
-                        
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm truncate">{video.profiles?.username || 'Unknown'}</p>
-                            {video.user_id === user?.id && (
-                              <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">You</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Angle #{index + 1} · {new Date(video.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                        )}
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Play className="w-4 h-4 text-white" fill="white" />
                         </div>
-                        
-                        {/* Actions */}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button 
-                            size="icon" 
-                            variant="ghost"
-                            onClick={() => setPlayingVideo(video)}
-                            className="h-8 w-8 rounded-full"
-                          >
-                            <Play className="w-4 h-4" />
-                          </Button>
-                          {(isOwner || video.user_id === user?.id) && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-destructive hover:text-destructive">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="rounded-2xl">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete video?</AlertDialogTitle>
-                                  <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteVideo(video.id)} className="rounded-full bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                      </button>
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{video.profiles?.username || 'Unknown'}</p>
+                          {video.user_id === user?.id && (
+                            <span className="text-[10px] text-primary">you</span>
                           )}
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                          {video.duration}s · {new Date(video.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {(isOwner || video.user_id === user?.id) && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete this clip?</AlertDialogTitle>
+                                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteVideo(video.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -453,102 +438,88 @@ const SessionView = () => {
           </div>
 
           {/* Sidebar */}
-          <aside className="lg:col-span-4 space-y-4">
+          <aside className="space-y-6">
             {/* Participants */}
-            <div className="p-4 rounded-2xl bg-card/50 border border-border/50">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-sm">Participants</h3>
-                <span className="text-xs text-muted-foreground">{participants.length}/{maxParticipants}</span>
-              </div>
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                Participants ({participants.length})
+              </h3>
               <div className="space-y-2">
                 {participants.map((participant) => (
-                  <div key={participant.id} className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-xs font-medium text-primary-foreground">
+                  <div key={participant.id} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
                       {participant.profiles.username[0].toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{participant.profiles.username}</p>
-                      {participant.user_id === session.owner_id && (
-                        <p className="text-[10px] text-muted-foreground">Session owner</p>
-                      )}
+                      <p className="text-sm truncate">
+                        {participant.profiles.username}
+                        {participant.user_id === session.owner_id && (
+                          <span className="text-muted-foreground"> · owner</span>
+                        )}
+                      </p>
                     </div>
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Quick Share */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
-                  <QRCodeSVG 
-                    value={`${window.location.origin}/q/${session.time_code}`}
-                    size={32}
-                    level="L"
-                  />
+            {/* Session Details */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                Details
+              </h3>
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Max clip</dt>
+                  <dd>{session.max_video_length}s</dd>
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-sm">Invite Others</p>
-                  <p className="text-xs text-muted-foreground">Scan or share code</p>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Mode</dt>
+                  <dd className="capitalize">{session.mode}</dd>
                 </div>
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
-                  onClick={() => setShowSharePanel(true)}
-                  className="rounded-full"
-                >
-                  <QrCode className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={session.time_code}
-                  readOnly
-                  className="font-mono text-sm font-semibold text-center bg-background/50 border-0 rounded-full h-9"
-                />
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={copyTimeCode}
-                  className="shrink-0 rounded-full h-9 w-9"
-                >
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-
-            {/* Session Stats */}
-            <div className="p-4 rounded-2xl bg-card/50 border border-border/50">
-              <h3 className="font-medium text-sm mb-3">Session Info</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-muted/30">
-                  <p className="text-xs text-muted-foreground">Max Length</p>
-                  <p className="font-semibold">{session.max_video_length}s</p>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Tier</dt>
+                  <dd className="capitalize">{session.tier}</dd>
                 </div>
-                <div className="p-3 rounded-xl bg-muted/30">
-                  <p className="text-xs text-muted-foreground">Total Duration</p>
-                  <p className="font-semibold">{totalDuration}s</p>
-                </div>
-                <div className="p-3 rounded-xl bg-muted/30">
-                  <p className="text-xs text-muted-foreground">Mode</p>
-                  <p className="font-semibold capitalize">{session.mode}</p>
-                </div>
-                <div className="p-3 rounded-xl bg-muted/30">
-                  <p className="text-xs text-muted-foreground">Tier</p>
-                  <p className="font-semibold capitalize">{session.tier}</p>
-                </div>
-              </div>
+              </dl>
               
               {session.tier === 'free' && participants.length >= 3 && (
                 <Button
                   size="sm"
-                  className="w-full mt-4 gradient-primary rounded-full"
+                  variant="outline"
+                  className="w-full mt-4"
                   onClick={() => navigate('/pricing')}
                 >
                   Upgrade to Pro
                 </Button>
               )}
+            </div>
+
+            {/* Quick Invite */}
+            <div className="p-4 rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium">Invite link</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={copyShareLink}
+                  className="h-7 text-xs"
+                >
+                  {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
+                  Copy
+                </Button>
+              </div>
+              <div 
+                onClick={() => setShowSharePanel(true)}
+                className="p-3 bg-white rounded cursor-pointer hover:opacity-90 transition-opacity"
+              >
+                <QRCodeSVG 
+                  value={`${window.location.origin}/q/${session.time_code}`}
+                  size={120}
+                  level="L"
+                  className="w-full h-auto"
+                />
+              </div>
             </div>
           </aside>
         </div>
@@ -556,37 +527,34 @@ const SessionView = () => {
 
       {/* Share Panel Modal */}
       <Dialog open={showSharePanel} onOpenChange={setShowSharePanel}>
-        <DialogContent className="rounded-2xl max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-center">Invite to Session</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center space-y-6 py-4">
-            <div className="p-4 bg-white rounded-2xl">
+        <DialogContent className="max-w-xs p-6">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="p-4 bg-white rounded-lg">
               <QRCodeSVG 
                 value={`${window.location.origin}/q/${session.time_code}`}
-                size={200}
+                size={180}
                 level="H"
               />
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold font-mono tracking-wider">{session.time_code}</p>
-              <p className="text-sm text-muted-foreground mt-1">Scan QR or enter code to join</p>
+              <p className="text-2xl font-semibold font-mono tracking-widest">{session.time_code}</p>
+              <p className="text-sm text-muted-foreground mt-1">Scan or enter code to join</p>
             </div>
             <div className="flex gap-2 w-full">
               <Button 
-                variant="secondary" 
-                className="flex-1 rounded-full"
+                variant="outline" 
+                className="flex-1"
                 onClick={copyTimeCode}
               >
-                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                Copy Code
+                {copied ? <Check className="w-4 h-4 mr-1.5" /> : <Copy className="w-4 h-4 mr-1.5" />}
+                Code
               </Button>
               <Button 
-                className="flex-1 rounded-full gradient-primary"
+                className="flex-1"
                 onClick={copyShareLink}
               >
-                <Share2 className="w-4 h-4 mr-2" />
-                Copy Link
+                <Share2 className="w-4 h-4 mr-1.5" />
+                Link
               </Button>
             </div>
           </div>
@@ -595,119 +563,83 @@ const SessionView = () => {
 
       {/* Video Player Modal */}
       <Dialog open={!!playingVideo} onOpenChange={(open) => !open && setPlayingVideo(null)}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden rounded-2xl bg-black">
-          <div className="relative">
-            <button 
-              onClick={() => setPlayingVideo(null)}
-              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="aspect-video">
-              {playingVideo && (
-                <video
-                  src={`https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`}
-                  controls
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-contain"
-                />
-              )}
-            </div>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black border-0">
+          <div className="aspect-video">
+            {playingVideo && (
+              <video
+                src={`https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`}
+                controls
+                autoPlay
+                playsInline
+                className="w-full h-full object-contain"
+              />
+            )}
           </div>
           
           {playingVideo && (
-            <div className="bg-card p-4 space-y-4">
+            <div className="bg-card p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">{playingVideo.profiles?.username || 'Video'}</p>
-                  <p className="text-sm text-muted-foreground">{playingVideo.duration}s · {new Date(playingVideo.uploaded_at).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {playingVideo.duration}s · {new Date(playingVideo.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() => {
-                    const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `timecode-${playingVideo.profiles?.username || 'video'}-${playingVideo.id.slice(0, 8)}.mp4`;
-                    link.target = '_blank';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    toast.success("Download started!");
-                  }}
-                >
-                  <Download className="w-4 h-4 mr-1.5" />
-                  Download
-                </Button>
-                
-                {typeof navigator !== 'undefined' && 'share' in navigator && (
+                <div className="flex gap-2">
                   <Button
+                    variant="outline"
                     size="sm"
-                    className="rounded-full gradient-primary"
-                    onClick={async () => {
+                    onClick={() => {
                       const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
-                      try {
-                        const response = await fetch(url);
-                        const blob = await response.blob();
-                        const file = new File([blob], `timecode-${playingVideo.profiles?.username || 'video'}.mp4`, { type: 'video/mp4' });
-                        
-                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                          await navigator.share({
-                            files: [file],
-                            title: 'Check out this video!',
-                            text: `Multi-angle video from ${session?.name || 'TimeCode'}`,
-                          });
-                          toast.success("Shared!");
-                        } else {
-                          await navigator.share({
-                            title: 'Check out this video!',
-                            text: `Multi-angle video from ${session?.name || 'TimeCode'}`,
-                            url: url,
-                          });
-                          toast.success("Shared!");
-                        }
-                      } catch (error: any) {
-                        if (error.name !== 'AbortError') {
-                          toast.error("Sharing failed");
-                        }
-                      }
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `timecode-${playingVideo.profiles?.username || 'video'}-${playingVideo.id.slice(0, 8)}.mp4`;
+                      link.target = '_blank';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      toast.success("Download started!");
                     }}
                   >
-                    <Share2 className="w-4 h-4 mr-1.5" />
-                    Share
+                    <Download className="w-4 h-4 mr-1.5" />
+                    Download
                   </Button>
-                )}
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() => {
-                    const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
-                    window.open(`https://twitter.com/intent/tweet?text=Check out this multi-angle video!&url=${encodeURIComponent(url)}`, '_blank');
-                  }}
-                >
-                  <Twitter className="w-4 h-4" />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() => {
-                    const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
-                    navigator.clipboard.writeText(url);
-                    toast.success("Link copied!");
-                  }}
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
+                  
+                  {typeof navigator !== 'undefined' && 'share' in navigator && (
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
+                        try {
+                          const response = await fetch(url);
+                          const blob = await response.blob();
+                          const file = new File([blob], `timecode-${playingVideo.profiles?.username || 'video'}.mp4`, { type: 'video/mp4' });
+                          
+                          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                              files: [file],
+                              title: 'Check out this video!',
+                              text: `Multi-angle video from ${session?.name || 'TimeCode'}`,
+                            });
+                          } else {
+                            await navigator.share({
+                              title: 'Check out this video!',
+                              text: `Multi-angle video from ${session?.name || 'TimeCode'}`,
+                              url: url,
+                            });
+                          }
+                        } catch (error: any) {
+                          if (error.name !== 'AbortError') {
+                            toast.error("Sharing failed");
+                          }
+                        }
+                      }}
+                    >
+                      <Share2 className="w-4 h-4 mr-1.5" />
+                      Share
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           )}
