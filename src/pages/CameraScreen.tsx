@@ -575,7 +575,7 @@ const CameraScreen = () => {
 
       {/* Bottom Controls */}
       {!showTrimmer && !uploading && (
-        <div className="bg-black/90 backdrop-blur-lg safe-area-pb">
+        <div className="backdrop-blur-lg safe-area-pb">
           <div className="flex items-center justify-between py-6 px-8">
             {/* Left - Create + Join buttons */}
             <div className="flex flex-col items-center gap-1">
