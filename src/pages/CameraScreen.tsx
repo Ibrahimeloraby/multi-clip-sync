@@ -8,6 +8,7 @@ import { CreateSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
 
 const CameraScreen = () => {
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -31,6 +32,39 @@ const CameraScreen = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // No recording time limit
+
+  // Initialize anonymous auth on mount
+  useEffect(() => {
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // Sign in anonymously
+        const { data, error } = await supabase.auth.signInAnonymously();
+        if (error) {
+          console.error("Anonymous auth error:", error);
+          toast.error("Failed to initialize. Please refresh.");
+          return;
+        }
+        
+        // Create profile for anonymous user
+        if (data.user) {
+          const deviceId = crypto.randomUUID();
+          const username = `User_${Math.random().toString(36).substring(2, 6)}`;
+          
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            username,
+            device_id: deviceId
+          }, { onConflict: 'id' });
+        }
+      }
+      
+      setIsAuthReady(true);
+    };
+    
+    initAuth();
+  }, []);
 
   // Initialize camera on mount
   useEffect(() => {
@@ -548,7 +582,7 @@ const CameraScreen = () => {
             {/* Center - Record button */}
             <button
               onClick={recording ? stopRecording : () => startRecording()}
-              disabled={!cameraReady}
+              disabled={!cameraReady || !isAuthReady}
               className="relative active:scale-95 transition-transform"
             >
               <div className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center">
