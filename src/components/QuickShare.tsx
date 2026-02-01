@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Copy, Check, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -12,6 +12,9 @@ export interface QuickShareProps {
   disabled?: boolean;
   hasSession?: boolean;
   onNeedSession?: () => Promise<{ timeCode: string; sessionName: string } | null>;
+  triggerShare?: boolean;
+  onShareTriggered?: () => void;
+  hideButton?: boolean;
 }
 
 const QuickShare = ({ 
@@ -19,7 +22,10 @@ const QuickShare = ({
   sessionName: initialSessionName, 
   disabled = false,
   hasSession = true,
-  onNeedSession
+  onNeedSession,
+  triggerShare = false,
+  onShareTriggered,
+  hideButton = false
 }: QuickShareProps) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -90,6 +96,14 @@ const QuickShare = ({
     }
   };
 
+  // Handle external trigger
+  useEffect(() => {
+    if (triggerShare) {
+      handleShare();
+      onShareTriggered?.();
+    }
+  }, [triggerShare]);
+
   // Direct app links as fallback
   const shareToWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(getInviteMessage(activeTimeCode, activeSessionName))}`, '_blank');
@@ -109,16 +123,18 @@ const QuickShare = ({
 
   return (
     <>
-      <button 
-        onClick={handleShare}
-        className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition-colors disabled:opacity-50 active:scale-95"
-        disabled={disabled}
-      >
-        <div className="w-14 h-14 rounded-full bg-black flex items-center justify-center">
-          <Share2 className="w-6 h-6 text-[#FFFF00]" strokeWidth={2} />
-        </div>
-        <span className="text-[10px] font-medium">Share</span>
-      </button>
+      {!hideButton && (
+        <button 
+          onClick={handleShare}
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition-colors disabled:opacity-50 active:scale-95"
+          disabled={disabled}
+        >
+          <div className="w-14 h-14 rounded-full bg-black flex items-center justify-center">
+            <Share2 className="w-6 h-6 text-[#FFFF00]" strokeWidth={2} />
+          </div>
+          <span className="text-[10px] font-medium">Share</span>
+        </button>
+      )}
 
       {/* Fallback sheet for when native share isn't available */}
       <Sheet open={open} onOpenChange={setOpen}>
