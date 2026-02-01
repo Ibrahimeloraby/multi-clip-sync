@@ -32,7 +32,7 @@ const CameraScreen = () => {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const maxDuration = 30; // Default max duration
+  // No recording time limit
 
   // Initialize camera on mount
   useEffect(() => {
@@ -193,14 +193,6 @@ const CameraScreen = () => {
       mediaRecorder.start(1000);
       setRecording(true);
       toast.success("Recording started!");
-
-      // Auto-stop after max duration
-      setTimeout(() => {
-        if (mediaRecorderRef.current?.state === 'recording') {
-          stopRecording();
-          toast.info(`Maximum ${maxDuration}s reached`);
-        }
-      }, maxDuration * 1000);
     } catch (error) {
       console.error("Recording error:", error);
       toast.error("Failed to start recording");
@@ -355,10 +347,10 @@ const CameraScreen = () => {
           </div>
         )}
 
-        {/* Time remaining */}
+        {/* Recording time elapsed */}
         {recording && (
           <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm safe-area-mt">
-            {maxDuration - recordingTime}s
+            {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
           </div>
         )}
 
@@ -379,7 +371,6 @@ const CameraScreen = () => {
             <h3 className="text-lg font-semibold mb-4 text-center">Trim Your Video</h3>
             <VideoTrimmer
               videoBlob={recordedBlob}
-              maxDuration={maxDuration}
               onTrimComplete={handleTrimComplete}
               onCancel={handleTrimCancel}
             />
