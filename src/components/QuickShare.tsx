@@ -4,31 +4,40 @@ import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 
-interface QuickShareProps {
+export interface QuickShareProps {
   timeCode: string;
   sessionName: string;
   disabled?: boolean;
+  hasSession?: boolean;
+  onNeedSession?: () => Promise<{ timeCode: string; sessionName: string } | null>;
 }
 
-const QuickShare = ({ timeCode, sessionName, disabled = false }: QuickShareProps) => {
+const QuickShare = ({ 
+  timeCode: initialTimeCode, 
+  sessionName: initialSessionName, 
+  disabled = false,
+  hasSession = true,
+  onNeedSession
+}: QuickShareProps) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [activeTimeCode, setActiveTimeCode] = useState(initialTimeCode);
+  const [activeSessionName, setActiveSessionName] = useState(initialSessionName);
 
-  const smartLink = `${window.location.origin}/q/${timeCode}`;
-  const inviteMessage = `Join "${sessionName}" 📹\n${smartLink}`;
+  const getSmartLink = (code: string) => `${window.location.origin}/q/${code}`;
+  const getInviteMessage = (code: string, name: string) => `Join "${name}" 📹\n${getSmartLink(code)}`;
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(inviteMessage);
+      await navigator.clipboard.writeText(getInviteMessage(activeTimeCode, activeSessionName));
       setCopied(true);
       toast.success("Copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       const textArea = document.createElement('textarea');
-      textArea.value = inviteMessage;
+      textArea.value = getInviteMessage(activeTimeCode, activeSessionName);
       textArea.style.position = 'fixed';
       textArea.style.opacity = '0';
       document.body.appendChild(textArea);
@@ -41,49 +50,61 @@ const QuickShare = ({ timeCode, sessionName, disabled = false }: QuickShareProps
     }
   };
 
-  // This opens the NATIVE share sheet with ALL apps (WhatsApp, Telegram, Instagram, etc.)
-  const shareNative = async () => {
+  const doNativeShare = async (code: string, name: string) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: sessionName,
-          text: `Join my session "${sessionName}"`,
-          url: smartLink,
+          title: name,
+          text: `Join my session "${name}"`,
+          url: getSmartLink(code),
         });
-        setOpen(false);
         return true;
       } catch (e: any) {
-        if (e.name === 'AbortError') return true; // User cancelled
+        if (e.name === 'AbortError') return true;
         console.log('Native share failed:', e.message);
       }
     }
     return false;
   };
 
-  // Handle share button click
   const handleShare = async () => {
-    const shared = await shareNative();
+    let code = activeTimeCode;
+    let name = activeSessionName;
+
+    // If no session exists, create one first
+    if (!hasSession && onNeedSession) {
+      const result = await onNeedSession();
+      if (result) {
+        code = result.timeCode;
+        name = result.sessionName;
+        setActiveTimeCode(code);
+        setActiveSessionName(name);
+      } else {
+        return;
+      }
+    }
+
+    const shared = await doNativeShare(code, name);
     if (!shared) {
-      // Native share not available (preview iframe), show sheet instead
       setOpen(true);
     }
   };
 
   // Direct app links as fallback
   const shareToWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(inviteMessage)}`, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(getInviteMessage(activeTimeCode, activeSessionName))}`, '_blank');
   };
 
   const shareToTelegram = () => {
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(smartLink)}&text=${encodeURIComponent(`Join "${sessionName}" 📹`)}`, '_blank');
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(getSmartLink(activeTimeCode))}&text=${encodeURIComponent(`Join "${activeSessionName}" 📹`)}`, '_blank');
   };
 
   const shareToTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(inviteMessage)}`, '_blank');
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(getInviteMessage(activeTimeCode, activeSessionName))}`, '_blank');
   };
 
   const shareToSMS = () => {
-    window.location.href = `sms:?body=${encodeURIComponent(inviteMessage)}`;
+    window.location.href = `sms:?body=${encodeURIComponent(getInviteMessage(activeTimeCode, activeSessionName))}`;
   };
 
   return (
@@ -106,7 +127,7 @@ const QuickShare = ({ timeCode, sessionName, disabled = false }: QuickShareProps
           
           <div className="flex items-center justify-center gap-2 mb-5">
             <span className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
-            <span className="text-sm font-medium">{sessionName}</span>
+            <span className="text-sm font-medium">{activeSessionName}</span>
           </div>
 
           {/* App share buttons */}
@@ -165,7 +186,7 @@ const QuickShare = ({ timeCode, sessionName, disabled = false }: QuickShareProps
             onClick={copyLink}
             className="w-full flex items-center justify-between p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors active:scale-[0.98]"
           >
-            <span className="text-sm text-muted-foreground truncate max-w-[240px] font-mono">{smartLink}</span>
+            <span className="text-sm text-muted-foreground truncate max-w-[240px] font-mono">{getSmartLink(activeTimeCode)}</span>
             {copied ? (
               <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
             ) : (
