@@ -111,13 +111,13 @@ const QuickShare = ({
     <>
       <button 
         onClick={handleShare}
-        className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors disabled:opacity-50"
+        className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition-colors disabled:opacity-50 active:scale-95"
         disabled={disabled}
       >
-        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-          <Share2 className="w-5 h-5" />
+        <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg">
+          <Share2 className="w-6 h-6" />
         </div>
-        <span className="text-[10px]">Share</span>
+        <span className="text-[10px] font-medium">Share</span>
       </button>
 
       {/* Fallback sheet for when native share isn't available */}
