@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera, Film, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,6 @@ interface CameraCapabilities {
   torch: boolean;
 }
 
-// Extended types for camera capabilities not in standard TypeScript types
 interface ExtendedMediaTrackCapabilities {
   zoom?: { min: number; max: number; step: number };
   torch?: boolean;
@@ -25,12 +25,8 @@ interface ExtendedMediaTrackSettings {
   zoom?: number;
 }
 
-interface ExtendedMediaTrackConstraintSet {
-  zoom?: number;
-  torch?: boolean;
-}
-
 const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraControlsProps) => {
+  const navigate = useNavigate();
   const [capabilities, setCapabilities] = useState<CameraCapabilities>({
     zoom: null,
     torch: false,
@@ -38,7 +34,6 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
   const [currentZoom, setCurrentZoom] = useState(1);
   const [torchOn, setTorchOn] = useState(false);
 
-  // Check camera capabilities when stream changes
   useEffect(() => {
     if (!stream) {
       setCapabilities({ zoom: null, torch: false });
@@ -63,7 +58,6 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
           torch: !!caps.torch,
         });
 
-        // Get current settings
         const settings = videoTrack.getSettings() as unknown as ExtendedMediaTrackSettings;
         if (settings?.zoom) {
           setCurrentZoom(settings.zoom);
@@ -74,7 +68,6 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
     }
   }, [stream]);
 
-  // Apply zoom
   const handleZoomChange = useCallback(async (value: number[]) => {
     if (!stream || !capabilities.zoom) return;
     
@@ -93,7 +86,6 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
     }
   }, [stream, capabilities.zoom]);
 
-  // Toggle flashlight
   const toggleTorch = useCallback(async () => {
     if (!stream || !capabilities.torch) return;
     
@@ -112,7 +104,6 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
     }
   }, [stream, capabilities.torch, torchOn]);
 
-  // Switch camera
   const handleSwitchCamera = () => {
     onFacingModeChange(facingMode === "user" ? "environment" : "user");
   };
@@ -121,15 +112,15 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
   const hasTorch = capabilities.torch && facingMode === "environment";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {/* Camera Switch */}
       <Button
         variant="ghost"
         size="icon"
         onClick={handleSwitchCamera}
-        className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60"
+        className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60"
       >
-        <SwitchCamera className="w-6 h-6" />
+        <SwitchCamera className="w-5 h-5" />
       </Button>
 
       {/* Torch Toggle */}
@@ -139,11 +130,11 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
           size="icon"
           onClick={toggleTorch}
           className={cn(
-            "w-12 h-12 rounded-full backdrop-blur-sm text-white",
+            "w-11 h-11 rounded-full backdrop-blur-sm text-white",
             torchOn ? "bg-yellow-500/80 hover:bg-yellow-500" : "bg-black/40 hover:bg-black/60"
           )}
         >
-          {torchOn ? <Flashlight className="w-6 h-6" /> : <FlashlightOff className="w-6 h-6" />}
+          {torchOn ? <Flashlight className="w-5 h-5" /> : <FlashlightOff className="w-5 h-5" />}
         </Button>
       )}
 
@@ -151,7 +142,7 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
       {hasZoom && (
         <div className="flex flex-col items-center gap-2 bg-black/40 backdrop-blur-sm rounded-full py-3 px-2">
           <ZoomIn className="w-4 h-4 text-white/70" />
-          <div className="h-24 w-8 flex items-center justify-center">
+          <div className="h-20 w-8 flex items-center justify-center">
             <Slider
               value={[currentZoom]}
               min={capabilities.zoom!.min}
@@ -166,6 +157,29 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
           <span className="text-[10px] text-white/70">{currentZoom.toFixed(1)}x</span>
         </div>
       )}
+
+      {/* Divider */}
+      <div className="w-6 h-px bg-white/20 mx-auto my-1" />
+
+      {/* Videos Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => navigate('/videos')}
+        className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60"
+      >
+        <Film className="w-5 h-5" />
+      </Button>
+
+      {/* Feed Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => navigate('/feed')}
+        className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60"
+      >
+        <Play className="w-5 h-5" />
+      </Button>
     </div>
   );
 };
