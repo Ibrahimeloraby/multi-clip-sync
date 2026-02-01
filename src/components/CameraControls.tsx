@@ -111,6 +111,9 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
   const hasZoom = capabilities.zoom && capabilities.zoom.max > 1;
   const hasTorch = capabilities.torch && facingMode === "environment";
 
+  // Neon yellow button style
+  const neonYellowBtn = "w-11 h-11 rounded-full bg-amber-400/80 backdrop-blur-sm text-black hover:bg-amber-400 shadow-lg shadow-amber-400/30";
+
   return (
     <div className="flex flex-col gap-3">
       {/* Camera Switch */}
@@ -118,7 +121,7 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
         variant="ghost"
         size="icon"
         onClick={handleSwitchCamera}
-        className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60"
+        className={neonYellowBtn}
       >
         <SwitchCamera className="w-5 h-5" />
       </Button>
@@ -130,8 +133,8 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
           size="icon"
           onClick={toggleTorch}
           className={cn(
-            "w-11 h-11 rounded-full backdrop-blur-sm text-white",
-            torchOn ? "bg-yellow-500/80 hover:bg-yellow-500" : "bg-black/40 hover:bg-black/60"
+            neonYellowBtn,
+            torchOn && "bg-amber-300 ring-2 ring-amber-200"
           )}
         >
           {torchOn ? <Flashlight className="w-5 h-5" /> : <FlashlightOff className="w-5 h-5" />}
@@ -140,8 +143,8 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
 
       {/* Zoom Control */}
       {hasZoom && (
-        <div className="flex flex-col items-center gap-2 bg-black/40 backdrop-blur-sm rounded-full py-3 px-2">
-          <ZoomIn className="w-4 h-4 text-white/70" />
+        <div className="flex flex-col items-center gap-2 bg-amber-400/80 backdrop-blur-sm rounded-full py-3 px-2 shadow-lg shadow-amber-400/30">
+          <ZoomIn className="w-4 h-4 text-black/70" />
           <div className="h-20 w-8 flex items-center justify-center">
             <Slider
               value={[currentZoom]}
@@ -153,20 +156,20 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
               className="h-full"
             />
           </div>
-          <ZoomOut className="w-4 h-4 text-white/70" />
-          <span className="text-[10px] text-white/70">{currentZoom.toFixed(1)}x</span>
+          <ZoomOut className="w-4 h-4 text-black/70" />
+          <span className="text-[10px] text-black/70 font-medium">{currentZoom.toFixed(1)}x</span>
         </div>
       )}
 
       {/* Divider */}
-      <div className="w-6 h-px bg-white/20 mx-auto my-1" />
+      <div className="w-6 h-px bg-amber-400/40 mx-auto my-1" />
 
       {/* Videos Button */}
       <Button
         variant="ghost"
         size="icon"
         onClick={() => navigate('/videos')}
-        className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60"
+        className={neonYellowBtn}
       >
         <Film className="w-5 h-5" />
       </Button>
@@ -176,7 +179,7 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
         variant="ghost"
         size="icon"
         onClick={() => navigate('/feed')}
-        className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60"
+        className={neonYellowBtn}
       >
         <Play className="w-5 h-5" />
       </Button>
