@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  Users, Plus, Loader2, Upload
+  Users, Plus, Loader2, Upload, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,11 +60,20 @@ const CameraScreen = () => {
     try {
       setCameraReady(false);
       
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast.error("Camera not supported on this browser");
+        console.error("mediaDevices not available");
+        return;
+      }
+      
       // Stop existing stream
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
 
+      console.log("Requesting camera access...");
+      
       const newStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: facingMode,
@@ -74,22 +83,57 @@ const CameraScreen = () => {
         audio: true,
       });
 
+      console.log("Camera access granted, setting up video element...");
+      
       setStream(newStream);
 
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
         videoRef.current.muted = true;
         videoRef.current.playsInline = true;
+        
+        // Wait for video to be ready
+        await new Promise((resolve) => {
+          if (videoRef.current) {
+            videoRef.current.onloadedmetadata = resolve;
+          }
+        });
+        
         await videoRef.current.play();
+        console.log("Video playing successfully");
       }
 
       setCameraReady(true);
     } catch (error: any) {
-      console.error("Camera error:", error);
-      if (error.name === 'NotAllowedError') {
-        toast.error("Camera access denied. Please allow camera permissions.");
+      console.error("Camera error:", error.name, error.message);
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        toast.error("Camera access denied. Check your browser settings.");
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        toast.error("No camera found on this device.");
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        toast.error("Camera is in use by another app.");
+      } else if (error.name === 'OverconstrainedError') {
+        // Try again with basic constraints
+        try {
+          const basicStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+          setStream(basicStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = basicStream;
+            videoRef.current.muted = true;
+            videoRef.current.playsInline = true;
+            await videoRef.current.play();
+          }
+          setCameraReady(true);
+          return;
+        } catch {
+          toast.error("Camera not compatible.");
+        }
       } else {
-        toast.error("Failed to access camera");
+        toast.error(`Camera error: ${error.message || 'Unknown error'}`);
       }
     }
   };
@@ -281,10 +325,18 @@ const CameraScreen = () => {
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
 
-        {/* Loading overlay */}
+        {/* Loading overlay - with retry option after delay */}
         {!cameraReady && !showTrimmer && (
-          <div className="absolute inset-0 bg-black flex items-center justify-center">
+          <div className="absolute inset-0 bg-black flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-8 h-8 text-white animate-spin" />
+            <p className="text-white/70 text-sm">Starting camera...</p>
+            <button
+              onClick={() => startCamera()}
+              className="mt-4 flex items-center gap-2 text-white/60 hover:text-white text-sm transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Tap to retry
+            </button>
           </div>
         )}
 
