@@ -10,7 +10,6 @@ import VideoTrimmer from "@/components/VideoTrimmer";
 import BottomNav from "@/components/BottomNav";
 import { CreateSessionModal, JoinSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
-import PreInviteSheet from "@/components/PreInviteSheet";
 
 const CameraScreen = () => {
   const navigate = useNavigate();
@@ -23,11 +22,10 @@ const CameraScreen = () => {
   const [showTrimmer, setShowTrimmer] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   
-  // Session state
+  // Session state - unified: once created, session is ready to share & record
   const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [pendingSession, setPendingSession] = useState<{ id: string; name: string; timeCode: string } | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -266,16 +264,9 @@ const CameraScreen = () => {
   };
 
   const handleSessionCreated = (sessionId: string, timeCode: string, sessionName: string = "New Session") => {
-    // Store pending session - user can pre-invite before going live
-    setPendingSession({ id: sessionId, name: sessionName, timeCode });
-  };
-
-  const handleGoLive = () => {
-    if (pendingSession) {
-      setCurrentSession(pendingSession);
-      setPendingSession(null);
-      toast.success("Session is live! Start recording.");
-    }
+    // Session is immediately active and shareable
+    setCurrentSession({ id: sessionId, name: sessionName, timeCode });
+    toast.success("Session created! Share with friends or start recording.");
   };
 
   return (
@@ -388,28 +379,12 @@ const CameraScreen = () => {
               </div>
             </button>
 
-            {/* Create/Share button */}
+            {/* Share/Create button - unified */}
             {currentSession ? (
               <QuickShare 
                 timeCode={currentSession.timeCode}
                 sessionName={currentSession.name}
               />
-            ) : pendingSession ? (
-              <PreInviteSheet
-                sessionName={pendingSession.name}
-                timeCode={pendingSession.timeCode}
-                onGoLive={handleGoLive}
-              >
-                <button
-                  className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                  disabled={recording}
-                >
-                  <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center animate-pulse">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-[10px]">Invite</span>
-                </button>
-              </PreInviteSheet>
             ) : (
               <button
                 onClick={() => setShowCreateModal(true)}

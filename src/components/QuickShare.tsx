@@ -10,9 +10,10 @@ import {
 interface QuickShareProps {
   timeCode: string;
   sessionName: string;
+  disabled?: boolean;
 }
 
-const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
+const QuickShare = ({ timeCode, sessionName, disabled = false }: QuickShareProps) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -26,7 +27,6 @@ const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
       toast.success("Copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = inviteMessage;
       textArea.style.position = 'fixed';
@@ -42,7 +42,6 @@ const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
   };
 
   const shareNative = async () => {
-    // Check if Web Share API is available and we're in a secure context
     if (navigator.share && window.isSecureContext) {
       try {
         await navigator.share({
@@ -53,13 +52,11 @@ const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
         setOpen(false);
         return;
       } catch (e: any) {
-        console.log('Share failed:', e);
         if (e.name === 'AbortError') return;
-        // Fall through to SMS fallback
       }
     }
     
-    // Fallback: Open SMS with pre-filled message
+    // Fallback to SMS
     const smsBody = encodeURIComponent(inviteMessage);
     window.location.href = `sms:?body=${smsBody}`;
   };
@@ -72,7 +69,10 @@ const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors">
+        <button 
+          className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors disabled:opacity-50"
+          disabled={disabled}
+        >
           <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
             <Share2 className="w-5 h-5" />
           </div>
@@ -80,16 +80,13 @@ const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
         </button>
       </SheetTrigger>
       <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-6 pt-4">
-        {/* Drag handle */}
         <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-4" />
         
-        {/* Session info - compact */}
         <div className="flex items-center justify-center gap-2 mb-5">
           <span className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
           <span className="text-sm font-medium">{sessionName}</span>
         </div>
 
-        {/* Two share options side by side */}
         <div className="grid grid-cols-2 gap-3 mb-3">
           <button
             onClick={shareNative}
@@ -108,7 +105,6 @@ const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
           </button>
         </div>
 
-        {/* Copy link - secondary */}
         <button
           onClick={copyLink}
           className="w-full flex items-center justify-between p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors active:scale-[0.98]"
