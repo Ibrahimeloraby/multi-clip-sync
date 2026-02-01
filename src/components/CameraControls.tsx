@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera, Film, Play } from "lucide-react";
+import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera, Film, Play, Radio, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,8 @@ interface CameraControlsProps {
   stream: MediaStream | null;
   facingMode: "user" | "environment";
   onFacingModeChange: (mode: "user" | "environment") => void;
+  onGoLive?: () => void;
+  onShowNearby?: () => void;
 }
 
 interface CameraCapabilities {
@@ -25,7 +27,7 @@ interface ExtendedMediaTrackSettings {
   zoom?: number;
 }
 
-const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraControlsProps) => {
+const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onShowNearby }: CameraControlsProps) => {
   const navigate = useNavigate();
   const [capabilities, setCapabilities] = useState<CameraCapabilities>({
     zoom: null,
@@ -116,6 +118,33 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Go Live Button */}
+      {onGoLive && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onGoLive}
+          className={neonYellow}
+        >
+          <Radio className="w-5 h-5" />
+        </Button>
+      )}
+
+      {/* Nearby Sessions (Globe) */}
+      {onShowNearby && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onShowNearby}
+          className={neonYellow}
+        >
+          <Globe className="w-5 h-5" />
+        </Button>
+      )}
+
+      {/* Divider */}
+      <div className="w-6 h-px bg-[#FFFF00]/40 mx-auto my-1" />
+
       {/* Camera Switch */}
       <Button
         variant="ghost"

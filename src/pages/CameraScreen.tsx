@@ -1,11 +1,18 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, RefreshCw, Plus, Users } from "lucide-react";
+import { Loader2, RefreshCw, Plus, Users, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
 import VideoTrimmer from "@/components/VideoTrimmer";
 import { CreateSessionModal, JoinSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
+import LiveStreamView from "@/components/LiveStreamView";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 const CameraScreen = () => {
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -25,6 +32,12 @@ const CameraScreen = () => {
   const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   
+  // Live stream and nearby sessions state
+  const [showLiveStream, setShowLiveStream] = useState(false);
+  const [showNearbySessions, setShowNearbySessions] = useState(false);
+  const [nearbySessions, setNearbySessions] = useState<Array<{ id: string; name: string; time_code: string; distance: number }>>([]);
+  const [loadingNearby, setLoadingNearby] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -58,7 +71,11 @@ const CameraScreen = () => {
             username,
             device_id: deviceId
           }, { onConflict: 'id' });
+          
+          setCurrentUserId(data.user.id);
         }
+      } else {
+        setCurrentUserId(session.user.id);
       }
       
       setIsAuthReady(true);
@@ -459,6 +476,131 @@ const CameraScreen = () => {
     }
   };
 
+  // Fetch nearby sessions (within 100m using GPS)
+  const fetchNearbySessions = async () => {
+    setLoadingNearby(true);
+    try {
+      // Get user's current location
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // Fetch active sessions with location data
+      const { data: sessions, error } = await supabase
+        .from('sessions')
+        .select('id, name, time_code, latitude, longitude')
+        .eq('is_active', true)
+        .eq('mode', 'collaborative')
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null);
+
+      if (error) throw error;
+
+      // Calculate distance and filter sessions within 100m
+      const nearby = (sessions || [])
+        .map(session => {
+          const distance = calculateDistance(
+            latitude,
+            longitude,
+            session.latitude!,
+            session.longitude!
+          );
+          return { ...session, distance };
+        })
+        .filter(session => session.distance <= 100)
+        .sort((a, b) => a.distance - b.distance);
+
+      setNearbySessions(nearby);
+      
+      if (nearby.length === 0) {
+        toast.info("No nearby sessions found");
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch nearby sessions:", error);
+      if (error.code === 1) {
+        toast.error("Location access denied. Enable GPS to find nearby sessions.");
+      } else {
+        toast.error("Failed to find nearby sessions");
+      }
+    } finally {
+      setLoadingNearby(false);
+    }
+  };
+
+  // Haversine formula to calculate distance between two GPS coordinates
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
+  };
+
+  const handleShowNearby = () => {
+    setShowNearbySessions(true);
+    fetchNearbySessions();
+  };
+
+  const handleGoLive = () => {
+    if (!currentSession) {
+      toast.error("Create or join a session first to go live");
+      setShowCreateModal(true);
+      return;
+    }
+    setShowLiveStream(true);
+  };
+
+  const handleJoinNearbySession = async (sessionId: string, timeCode: string, sessionName: string) => {
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.user) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('device_id')
+        .eq('id', authSession.user.id)
+        .single();
+
+      // Check if already a participant
+      const { data: existing } = await supabase
+        .from('session_participants')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('user_id', authSession.user.id)
+        .single();
+
+      if (!existing) {
+        await supabase.from('session_participants').insert({
+          session_id: sessionId,
+          user_id: authSession.user.id,
+          device_id: profile?.device_id || 'unknown',
+        });
+      }
+
+      setCurrentSession({ id: sessionId, name: sessionName, timeCode });
+      setShowNearbySessions(false);
+      toast.success(`Joined "${sessionName}"!`);
+    } catch (error) {
+      console.error("Failed to join session:", error);
+      toast.error("Failed to join session");
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Camera Preview */}
@@ -546,6 +688,8 @@ const CameraScreen = () => {
               stream={stream}
               facingMode={facingMode}
               onFacingModeChange={handleFacingModeChange}
+              onGoLive={handleGoLive}
+              onShowNearby={handleShowNearby}
             />
           </div>
         )}
@@ -642,6 +786,62 @@ const CameraScreen = () => {
         open={showJoinModal}
         onOpenChange={setShowJoinModal}
       />
+
+      {/* Live Stream View */}
+      {showLiveStream && currentSession && currentUserId && (
+        <LiveStreamView
+          sessionId={currentSession.id}
+          userId={currentUserId}
+          onClose={() => setShowLiveStream(false)}
+        />
+      )}
+
+      {/* Nearby Sessions Sheet */}
+      <Sheet open={showNearbySessions} onOpenChange={setShowNearbySessions}>
+        <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-6 pt-4 max-h-[70vh]">
+          <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-4" />
+          <SheetHeader className="mb-4">
+            <SheetTitle className="flex items-center gap-2 justify-center">
+              <MapPin className="w-5 h-5 text-primary" />
+              Nearby Sessions
+            </SheetTitle>
+          </SheetHeader>
+          
+          {loadingNearby ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">Finding sessions near you...</p>
+            </div>
+          ) : nearbySessions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-3">
+                <MapPin className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground">No sessions found within 100m</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">Create a session or try again later</p>
+            </div>
+          ) : (
+            <div className="space-y-3 overflow-auto max-h-[50vh]">
+              {nearbySessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => handleJoinNearbySession(session.id, session.time_code, session.name)}
+                  className="w-full flex items-center justify-between p-4 bg-muted rounded-xl hover:bg-muted/80 transition-colors active:scale-[0.98]"
+                >
+                  <div className="text-left">
+                    <p className="font-medium">{session.name}</p>
+                    <p className="text-xs text-muted-foreground">Code: {session.time_code}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-primary">{Math.round(session.distance)}m</p>
+                    <p className="text-xs text-muted-foreground">away</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
