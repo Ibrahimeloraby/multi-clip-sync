@@ -153,18 +153,70 @@ const CameraScreen = () => {
     setFacingMode(mode);
   };
 
-  const startRecording = async () => {
+  const startRecording = async (sessionToUse?: { id: string; name: string; timeCode: string }) => {
     if (!stream) {
       toast.error("Camera not ready");
       return;
     }
 
-    if (!currentSession) {
-      toast.error("Create or join a session first");
-      setShowCreateModal(true);
-      return;
+    const session = sessionToUse || currentSession;
+
+    // Auto-create a quick session if none exists
+    if (!session) {
+      try {
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        if (!authSession?.user) {
+          toast.error("Not authenticated");
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('device_id')
+          .eq('id', authSession.user.id)
+          .single();
+
+        const timeCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const sessionName = `Quick Session`;
+
+        const { data: newSession, error } = await supabase
+          .from('sessions')
+          .insert({
+            owner_id: authSession.user.id,
+            name: sessionName,
+            time_code: timeCode,
+            mode: 'collaborative',
+            tier: 'free',
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Add owner as participant
+        await supabase.from('session_participants').insert({
+          session_id: newSession.id,
+          user_id: authSession.user.id,
+          device_id: profile?.device_id || 'unknown',
+        });
+
+        const createdSession = { id: newSession.id, name: sessionName, timeCode };
+        setCurrentSession(createdSession);
+        
+        // Now start recording with the new session
+        startRecordingWithSession(createdSession);
+        return;
+      } catch (error) {
+        console.error("Auto-create session error:", error);
+        toast.error("Failed to create session");
+        return;
+      }
     }
 
+    startRecordingWithSession(session);
+  };
+
+  const startRecordingWithSession = (session: { id: string; name: string; timeCode: string }) => {
     try {
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
         ? 'video/webm;codecs=vp8,opus'
@@ -172,7 +224,7 @@ const CameraScreen = () => {
           ? 'video/webm'
           : 'video/mp4';
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      const mediaRecorder = new MediaRecorder(stream!, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -192,7 +244,6 @@ const CameraScreen = () => {
 
       mediaRecorder.start(1000);
       setRecording(true);
-      toast.success("Recording started!");
     } catch (error) {
       console.error("Recording error:", error);
       toast.error("Failed to start recording");
@@ -394,7 +445,7 @@ const CameraScreen = () => {
           <div className="flex items-center justify-center gap-8 py-6 px-4">
             {/* Record button */}
             <button
-              onClick={recording ? stopRecording : startRecording}
+              onClick={recording ? stopRecording : () => startRecording()}
               disabled={!cameraReady}
               className="relative active:scale-95 transition-transform"
             >
