@@ -541,8 +541,11 @@ const CameraScreen = () => {
       {/* Bottom Controls */}
       {!showTrimmer && !uploading && (
         <div className="bg-black/90 backdrop-blur-lg safe-area-pb">
-          <div className="flex items-center justify-center gap-8 py-6 px-4">
-            {/* Record button */}
+          <div className="flex items-center justify-between py-6 px-8">
+            {/* Left placeholder - keeps layout balanced */}
+            <div className="w-14 h-14" />
+
+            {/* Center - Record button */}
             <button
               onClick={recording ? stopRecording : () => startRecording()}
               disabled={!cameraReady}
@@ -557,7 +560,7 @@ const CameraScreen = () => {
               </div>
             </button>
 
-            {/* Share button - always visible */}
+            {/* Right - Share button */}
             <QuickShare 
               timeCode={currentSession?.timeCode || ""}
               sessionName={currentSession?.name || "My Session"}
