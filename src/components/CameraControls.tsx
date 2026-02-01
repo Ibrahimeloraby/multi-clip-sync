@@ -179,7 +179,7 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
         variant="ghost"
         size="icon"
         onClick={() => navigate('/feed')}
-        className={neonYellow}
+        className="w-11 h-11 rounded-full bg-black backdrop-blur-sm text-white hover:bg-black/80 shadow-lg"
       >
         <Play className="w-5 h-5" />
       </Button>
