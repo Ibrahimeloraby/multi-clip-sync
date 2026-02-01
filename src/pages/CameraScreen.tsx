@@ -400,28 +400,23 @@ const CameraScreen = () => {
       {/* Bottom Controls */}
       {!showTrimmer && !uploading && (
         <div className="bg-black/90 backdrop-blur-lg safe-area-pb">
-          <div className="flex items-center justify-around py-4 px-4 max-w-lg mx-auto">
-            {/* Spacer for layout balance */}
-            <div className="w-12" />
-
+          <div className="flex items-center justify-center gap-8 py-6 px-4">
             {/* Record button */}
             <button
               onClick={recording ? stopRecording : startRecording}
               disabled={!cameraReady}
-              className="relative"
+              className="relative active:scale-95 transition-transform"
             >
-              <div className={`w-20 h-20 rounded-full border-4 border-white flex items-center justify-center transition-all ${
-                recording ? 'bg-transparent' : 'bg-transparent'
-              }`}>
+              <div className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center">
                 {recording ? (
-                  <div className="w-8 h-8 rounded-sm bg-destructive" />
+                  <div className="w-8 h-8 rounded-md bg-destructive" />
                 ) : (
                   <div className="w-16 h-16 rounded-full bg-destructive" />
                 )}
               </div>
             </button>
 
-            {/* Share/Create button - unified */}
+            {/* Share/Create button */}
             {currentSession ? (
               <QuickShare 
                 timeCode={currentSession.timeCode}
@@ -430,27 +425,15 @@ const CameraScreen = () => {
             ) : (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                className="flex flex-col items-center gap-1.5 text-white/80 hover:text-white transition-all active:scale-95"
                 disabled={recording}
               >
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-white" />
+                <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                  <Plus className="w-6 h-6" />
                 </div>
-                <span className="text-[10px]">Create</span>
+                <span className="text-[10px] font-medium">New</span>
               </button>
             )}
-          </div>
-
-          {/* Upload from gallery */}
-          <div className="flex justify-center pb-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="text-white/60 text-xs flex items-center gap-1 hover:text-white transition-colors"
-              disabled={recording}
-            >
-              <Upload className="w-3 h-3" />
-              Upload from gallery
-            </button>
           </div>
         </div>
       )}
