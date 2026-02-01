@@ -114,7 +114,7 @@ const QuickShare = ({
         className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition-colors disabled:opacity-50 active:scale-95"
         disabled={disabled}
       >
-        <div className="w-14 h-14 rounded-full bg-black flex items-center justify-center shadow-lg shadow-[#FFFF00]/30">
+        <div className="w-14 h-14 rounded-full bg-black flex items-center justify-center">
           <Share2 className="w-6 h-6 text-[#FFFF00]" strokeWidth={2} />
         </div>
         <span className="text-[10px] font-medium">Share</span>
