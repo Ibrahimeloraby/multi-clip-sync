@@ -1,4 +1,24 @@
 @tailwind base;
+
+/* Safe area insets for notched devices */
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-area-mt {
+  margin-top: env(safe-area-inset-top);
+}
+
+/* Hide scrollbar for feed */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 @tailwind components;
 @tailwind utilities;
 
