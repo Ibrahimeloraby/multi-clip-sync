@@ -582,17 +582,17 @@ const CameraScreen = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+                  className="w-12 h-12 rounded-full bg-amber-400/80 flex items-center justify-center shadow-lg shadow-amber-400/30 active:scale-95 transition-transform"
                   disabled={!isAuthReady}
                 >
-                  <Plus className="w-5 h-5 text-white" />
+                  <Plus className="w-5 h-5 text-black" />
                 </button>
                 <button
                   onClick={() => setShowJoinModal(true)}
-                  className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+                  className="w-12 h-12 rounded-full bg-amber-400/80 flex items-center justify-center shadow-lg shadow-amber-400/30 active:scale-95 transition-transform"
                   disabled={!isAuthReady}
                 >
-                  <Users className="w-5 h-5 text-white" />
+                  <Users className="w-5 h-5 text-black" />
                 </button>
               </div>
             </div>
