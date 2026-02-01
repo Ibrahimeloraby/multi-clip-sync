@@ -5,12 +5,13 @@ import VideoUpload from "@/components/VideoUpload";
 import MultiAnglePlayer from "@/components/MultiAnglePlayer";
 import ExportModal from "@/components/ExportModal";
 import VideoShareModal from "@/components/VideoShareModal";
+import LiveStreamView from "@/components/LiveStreamView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, 
-  Film, Clock, ChevronRight, Link as LinkIcon, CheckCircle2, Lock
+  Film, Clock, ChevronRight, Link as LinkIcon, CheckCircle2, Lock, Radio, Globe
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,6 +69,7 @@ interface VideoItem {
   duration: number;
   uploaded_at: string;
   profiles: Profile;
+  published_to_feed?: boolean;
 }
 
 type ViewMode = 'my-videos' | 'all-videos';
@@ -93,6 +95,7 @@ const SessionView = () => {
   const [autoRecordMode, setAutoRecordMode] = useState(searchParams.get('autoRecord') === 'true');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showSharePanel, setShowSharePanel] = useState(false);
+  const [showLiveStream, setShowLiveStream] = useState(false);
 
   const displayedVideos = !isOwner 
     ? videos.filter(v => v.user_id === user?.id)
@@ -236,6 +239,25 @@ const SessionView = () => {
     }
   };
 
+  const handlePublishToFeed = async (videoId: string, published: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('videos')
+        .update({ 
+          published_to_feed: published,
+          published_at: published ? new Date().toISOString() : null
+        })
+        .eq('id', videoId);
+      
+      if (error) throw error;
+      
+      toast.success(published ? "Published to Feed!" : "Removed from Feed");
+      fetchSessionData();
+    } catch (error: any) {
+      toast.error("Failed to update video");
+    }
+  };
+
   if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -306,6 +328,17 @@ const SessionView = () => {
             </div>
             
             <div className="flex items-center gap-2">
+              {/* Go Live Button */}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowLiveStream(true)}
+                className="h-9 border-[#FFFF00]/50 text-[#FFFF00] hover:bg-[#FFFF00]/10"
+              >
+                <Radio className="w-4 h-4 mr-2" />
+                Go Live
+              </Button>
+              
               <Button 
                 variant="outline" 
                 size="sm"
@@ -448,6 +481,12 @@ const SessionView = () => {
                           {video.user_id === user?.id && (
                             <span className="text-[10px] text-primary font-medium">• you</span>
                           )}
+                          {video.published_to_feed && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600">
+                              <Globe className="w-2.5 h-2.5" />
+                              public
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {video.duration}s · {new Date(video.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -456,6 +495,19 @@ const SessionView = () => {
                       
                       {/* Actions */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Publish to Feed button (owner only) */}
+                        {isOwner && (
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className={`h-7 w-7 ${video.published_to_feed ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                            onClick={() => handlePublishToFeed(video.id, !video.published_to_feed)}
+                            title={video.published_to_feed ? "Remove from Feed" : "Publish to Feed"}
+                          >
+                            <Globe className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        
                         {(isOwner || video.user_id === user?.id) && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -780,6 +832,15 @@ const SessionView = () => {
           sessionName={session.name}
           tier={session.tier}
           videos={videos}
+        />
+      )}
+
+      {/* Live Stream View */}
+      {showLiveStream && session && user && (
+        <LiveStreamView
+          sessionId={session.id}
+          userId={user.id}
+          onClose={() => setShowLiveStream(false)}
         />
       )}
     </div>
