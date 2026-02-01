@@ -111,8 +111,8 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
   const hasZoom = capabilities.zoom && capabilities.zoom.max > 1;
   const hasTorch = capabilities.torch && facingMode === "environment";
 
-  // Neon yellow button style
-  const neonYellowBtn = "w-11 h-11 rounded-full bg-amber-400/80 backdrop-blur-sm text-black hover:bg-amber-400 shadow-lg shadow-amber-400/30";
+  // Chartreuse neon button style
+  const neonChartreuse = "w-11 h-11 rounded-full bg-lime-400/80 backdrop-blur-sm text-black hover:bg-lime-400 shadow-lg shadow-lime-400/30";
 
   return (
     <div className="flex flex-col gap-3">
@@ -121,7 +121,7 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
         variant="ghost"
         size="icon"
         onClick={handleSwitchCamera}
-        className={neonYellowBtn}
+        className={neonChartreuse}
       >
         <SwitchCamera className="w-5 h-5" />
       </Button>
@@ -133,8 +133,8 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
           size="icon"
           onClick={toggleTorch}
           className={cn(
-            neonYellowBtn,
-            torchOn && "bg-amber-300 ring-2 ring-amber-200"
+            neonChartreuse,
+            torchOn && "bg-lime-300 ring-2 ring-lime-200"
           )}
         >
           {torchOn ? <Flashlight className="w-5 h-5" /> : <FlashlightOff className="w-5 h-5" />}
@@ -143,7 +143,7 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
 
       {/* Zoom Control */}
       {hasZoom && (
-        <div className="flex flex-col items-center gap-2 bg-amber-400/80 backdrop-blur-sm rounded-full py-3 px-2 shadow-lg shadow-amber-400/30">
+        <div className="flex flex-col items-center gap-2 bg-lime-400/80 backdrop-blur-sm rounded-full py-3 px-2 shadow-lg shadow-lime-400/30">
           <ZoomIn className="w-4 h-4 text-black/70" />
           <div className="h-20 w-8 flex items-center justify-center">
             <Slider
@@ -162,14 +162,14 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
       )}
 
       {/* Divider */}
-      <div className="w-6 h-px bg-amber-400/40 mx-auto my-1" />
+      <div className="w-6 h-px bg-lime-400/40 mx-auto my-1" />
 
       {/* Videos Button */}
       <Button
         variant="ghost"
         size="icon"
         onClick={() => navigate('/videos')}
-        className={neonYellowBtn}
+        className={neonChartreuse}
       >
         <Film className="w-5 h-5" />
       </Button>
@@ -179,7 +179,7 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange }: CameraContro
         variant="ghost"
         size="icon"
         onClick={() => navigate('/feed')}
-        className={neonYellowBtn}
+        className={neonChartreuse}
       >
         <Play className="w-5 h-5" />
       </Button>
