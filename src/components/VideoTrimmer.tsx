@@ -5,7 +5,7 @@ import { Play, Pause, Scissors, RotateCcw, Check, X } from "lucide-react";
 
 interface VideoTrimmerProps {
   videoBlob: Blob;
-  maxDuration: number;
+  maxDuration?: number; // Optional - no limit if not provided
   onTrimComplete: (trimmedBlob: Blob) => void;
   onCancel: () => void;
 }
