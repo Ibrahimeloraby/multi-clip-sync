@@ -38,6 +38,7 @@ const CameraScreen = () => {
   const [nearbySessions, setNearbySessions] = useState<Array<{ id: string; name: string; time_code: string; distance: number }>>([]);
   const [loadingNearby, setLoadingNearby] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [triggerShare, setTriggerShare] = useState(false);
   
   // Check if user is session owner
   const isSessionOwner = currentSession?.ownerId === currentUserId;
@@ -695,6 +696,7 @@ const CameraScreen = () => {
               onFacingModeChange={handleFacingModeChange}
               onGoLive={isSessionOwner ? handleGoLive : undefined}
               onShowNearby={handleShowNearby}
+              onShare={() => setTriggerShare(true)}
             />
           </div>
         )}
@@ -761,16 +763,22 @@ const CameraScreen = () => {
               </div>
             </button>
 
-            {/* Right - Share button */}
-            <QuickShare 
-              timeCode={currentSession?.timeCode || ""}
-              sessionName={currentSession?.name || "My Session"}
-              onNeedSession={handleCreateSessionForShare}
-              hasSession={!!currentSession}
-            />
+            {/* Right placeholder for balance */}
+            <div className="w-12" />
           </div>
         </div>
       )}
+
+      {/* QuickShare component (hidden button, sheet only) */}
+      <QuickShare 
+        timeCode={currentSession?.timeCode || ""}
+        sessionName={currentSession?.name || "My Session"}
+        onNeedSession={handleCreateSessionForShare}
+        hasSession={!!currentSession}
+        triggerShare={triggerShare}
+        onShareTriggered={() => setTriggerShare(false)}
+        hideButton
+      />
 
       <input
         ref={fileInputRef}

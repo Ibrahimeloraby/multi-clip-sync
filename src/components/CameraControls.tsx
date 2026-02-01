@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera, Film, Play, Radio, Globe } from "lucide-react";
+import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera, Film, Play, Radio, Globe, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ interface CameraControlsProps {
   onFacingModeChange: (mode: "user" | "environment") => void;
   onGoLive?: () => void;
   onShowNearby?: () => void;
+  onShare?: () => void;
 }
 
 interface CameraCapabilities {
@@ -27,7 +28,7 @@ interface ExtendedMediaTrackSettings {
   zoom?: number;
 }
 
-const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onShowNearby }: CameraControlsProps) => {
+const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onShowNearby, onShare }: CameraControlsProps) => {
   const navigate = useNavigate();
   const [capabilities, setCapabilities] = useState<CameraCapabilities>({
     zoom: null,
@@ -212,6 +213,18 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
       >
         <Play className="w-5 h-5 fill-black" />
       </Button>
+
+      {/* Share Button */}
+      {onShare && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onShare}
+          className={neonYellow}
+        >
+          <Share2 className="w-5 h-5" />
+        </Button>
+      )}
     </div>
   );
 };
