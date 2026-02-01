@@ -29,7 +29,7 @@ const CameraScreen = () => {
   const [editedName, setEditedName] = useState("");
   
   // Session state - unified: once created, session is ready to share & record
-  const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string } | null>(null);
+  const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string; ownerId?: string } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   
   // Live stream and nearby sessions state
@@ -38,6 +38,9 @@ const CameraScreen = () => {
   const [nearbySessions, setNearbySessions] = useState<Array<{ id: string; name: string; time_code: string; distance: number }>>([]);
   const [loadingNearby, setLoadingNearby] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Check if user is session owner
+  const isSessionOwner = currentSession?.ownerId === currentUserId;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -250,7 +253,7 @@ const CameraScreen = () => {
           device_id: profile?.device_id || 'unknown',
         });
 
-        const createdSession = { id: newSession.id, name: sessionName, timeCode };
+        const createdSession = { id: newSession.id, name: sessionName, timeCode, ownerId: authSession.user.id };
         setCurrentSession(createdSession);
         
         // Now start recording with the new session
@@ -399,9 +402,11 @@ const CameraScreen = () => {
     }
   };
 
-  const handleSessionCreated = (sessionId: string, timeCode: string, sessionName: string = "New Session") => {
+  const handleSessionCreated = async (sessionId: string, timeCode: string, sessionName: string = "New Session") => {
+    // Get current user to set as owner
+    const { data: { session: authSession } } = await supabase.auth.getSession();
     // Session is immediately active and shareable
-    setCurrentSession({ id: sessionId, name: sessionName, timeCode });
+    setCurrentSession({ id: sessionId, name: sessionName, timeCode, ownerId: authSession?.user?.id });
     toast.success("Session created! Share with friends or start recording.");
   };
 
@@ -465,7 +470,7 @@ const CameraScreen = () => {
         device_id: profile?.device_id || 'unknown',
       });
 
-      const createdSession = { id: newSession.id, name: sessionName, timeCode };
+      const createdSession = { id: newSession.id, name: sessionName, timeCode, ownerId: authSession.user.id };
       setCurrentSession(createdSession);
       
       return { timeCode, sessionName };
@@ -592,7 +597,7 @@ const CameraScreen = () => {
         });
       }
 
-      setCurrentSession({ id: sessionId, name: sessionName, timeCode });
+      setCurrentSession({ id: sessionId, name: sessionName, timeCode, ownerId: undefined }); // Not owner when joining
       setShowNearbySessions(false);
       toast.success(`Joined "${sessionName}"!`);
     } catch (error) {
@@ -688,7 +693,7 @@ const CameraScreen = () => {
               stream={stream}
               facingMode={facingMode}
               onFacingModeChange={handleFacingModeChange}
-              onGoLive={handleGoLive}
+              onGoLive={isSessionOwner ? handleGoLive : undefined}
               onShowNearby={handleShowNearby}
             />
           </div>
