@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { 
-  Video, Users, Share2, Plus, Loader2, Upload
+  Users, Plus, Loader2, Upload
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
 import VideoTrimmer from "@/components/VideoTrimmer";
 import BottomNav from "@/components/BottomNav";
-import { CreateSessionModal, JoinSessionModal, ShareSessionModal } from "@/components/SessionModals";
+import { CreateSessionModal, JoinSessionModal } from "@/components/SessionModals";
+import QuickShare from "@/components/QuickShare";
+import PreInviteSheet from "@/components/PreInviteSheet";
 
 const CameraScreen = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const CameraScreen = () => {
   const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
+  const [pendingSession, setPendingSession] = useState<{ id: string; name: string; timeCode: string } | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -264,9 +265,17 @@ const CameraScreen = () => {
     }
   };
 
-  const handleSessionCreated = (sessionId: string, timeCode: string) => {
-    setCurrentSession({ id: sessionId, name: "New Session", timeCode });
-    toast.success("Session ready! Start recording.");
+  const handleSessionCreated = (sessionId: string, timeCode: string, sessionName: string = "New Session") => {
+    // Store pending session - user can pre-invite before going live
+    setPendingSession({ id: sessionId, name: sessionName, timeCode });
+  };
+
+  const handleGoLive = () => {
+    if (pendingSession) {
+      setCurrentSession(pendingSession);
+      setPendingSession(null);
+      toast.success("Session is live! Start recording.");
+    }
   };
 
   return (
@@ -381,16 +390,26 @@ const CameraScreen = () => {
 
             {/* Create/Share button */}
             {currentSession ? (
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                disabled={recording}
+              <QuickShare 
+                timeCode={currentSession.timeCode}
+                sessionName={currentSession.name}
+              />
+            ) : pendingSession ? (
+              <PreInviteSheet
+                sessionName={pendingSession.name}
+                timeCode={pendingSession.timeCode}
+                onGoLive={handleGoLive}
               >
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                  <Share2 className="w-5 h-5" />
-                </div>
-                <span className="text-[10px]">Share</span>
-              </button>
+                <button
+                  className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                  disabled={recording}
+                >
+                  <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center animate-pulse">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-[10px]">Invite</span>
+                </button>
+              </PreInviteSheet>
             ) : (
               <button
                 onClick={() => setShowCreateModal(true)}
@@ -440,14 +459,6 @@ const CameraScreen = () => {
         open={showJoinModal}
         onOpenChange={setShowJoinModal}
       />
-      {currentSession && (
-        <ShareSessionModal
-          open={showShareModal}
-          onOpenChange={setShowShareModal}
-          timeCode={currentSession.timeCode}
-          sessionName={currentSession.name}
-        />
-      )}
     </div>
   );
 };

@@ -20,7 +20,7 @@ import { useNavigate } from "react-router-dom";
 interface CreateSessionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSessionCreated: (sessionId: string, timeCode: string) => void;
+  onSessionCreated: (sessionId: string, timeCode: string, sessionName: string) => void;
 }
 
 export const CreateSessionModal = ({ open, onOpenChange, onSessionCreated }: CreateSessionModalProps) => {
@@ -114,7 +114,7 @@ export const CreateSessionModal = ({ open, onOpenChange, onSessionCreated }: Cre
         device_id: profile?.device_id || crypto.randomUUID()
       });
 
-      onSessionCreated(session.id, timeCode);
+      onSessionCreated(session.id, timeCode, sessionName);
       onOpenChange(false);
       setSessionName("");
       toast.success("Session created!");
