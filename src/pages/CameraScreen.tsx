@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
 import VideoTrimmer from "@/components/VideoTrimmer";
-import BottomNav from "@/components/BottomNav";
 import { CreateSessionModal, JoinSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
 
@@ -421,8 +420,6 @@ const CameraScreen = () => {
         className="hidden"
       />
 
-      {/* Bottom Navigation - hidden when recording */}
-      {!recording && !showTrimmer && !uploading && <BottomNav />}
 
       {/* Modals */}
       <CreateSessionModal
