@@ -1,8 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { 
-  Plus, Loader2, Upload, RefreshCw
-} from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
@@ -11,7 +8,6 @@ import { CreateSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
 
 const CameraScreen = () => {
-  const navigate = useNavigate();
   const [cameraReady, setCameraReady] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -20,6 +16,8 @@ const CameraScreen = () => {
   const [uploading, setUploading] = useState(false);
   const [showTrimmer, setShowTrimmer] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState("");
   
   // Session state - unified: once created, session is ready to share & record
   const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string } | null>(null);
@@ -177,7 +175,7 @@ const CameraScreen = () => {
           .single();
 
         const timeCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        const sessionName = `Quick Session`;
+        const sessionName = `My Session`;
 
         const { data: newSession, error } = await supabase
           .from('sessions')
@@ -355,6 +353,77 @@ const CameraScreen = () => {
     toast.success("Session created! Share with friends or start recording.");
   };
 
+  const handleRenameSession = async () => {
+    if (!currentSession || !editedName.trim()) {
+      setIsEditingName(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ name: editedName.trim() })
+        .eq('id', currentSession.id);
+
+      if (error) throw error;
+
+      setCurrentSession({ ...currentSession, name: editedName.trim() });
+      setIsEditingName(false);
+      toast.success("Session renamed!");
+    } catch (error) {
+      console.error("Rename error:", error);
+      toast.error("Failed to rename session");
+    }
+  };
+
+  const handleCreateSessionForShare = async (): Promise<{ timeCode: string; sessionName: string } | null> => {
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.user) {
+        toast.error("Not authenticated");
+        return null;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('device_id')
+        .eq('id', authSession.user.id)
+        .single();
+
+      const timeCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const sessionName = `My Session`;
+
+      const { data: newSession, error } = await supabase
+        .from('sessions')
+        .insert({
+          owner_id: authSession.user.id,
+          name: sessionName,
+          time_code: timeCode,
+          mode: 'collaborative',
+          tier: 'free',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await supabase.from('session_participants').insert({
+        session_id: newSession.id,
+        user_id: authSession.user.id,
+        device_id: profile?.device_id || 'unknown',
+      });
+
+      const createdSession = { id: newSession.id, name: sessionName, timeCode };
+      setCurrentSession(createdSession);
+      
+      return { timeCode, sessionName };
+    } catch (error) {
+      console.error("Create session error:", error);
+      toast.error("Failed to create session");
+      return null;
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Camera Preview */}
@@ -391,10 +460,40 @@ const CameraScreen = () => {
           </div>
         )}
 
-        {/* Session indicator */}
-        {currentSession && !recording && (
-          <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium safe-area-mt">
-            📹 {currentSession.name}
+        {/* Session indicator - tap to rename */}
+        {currentSession && !recording && !isEditingName && (
+          <button
+            onClick={() => {
+              setEditedName(currentSession.name);
+              setIsEditingName(true);
+            }}
+            className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium safe-area-mt hover:bg-black/70 transition-colors"
+          >
+            📹 {currentSession.name} <span className="text-white/50 ml-1">✎</span>
+          </button>
+        )}
+
+        {/* Inline rename input */}
+        {currentSession && !recording && isEditingName && (
+          <div className="absolute top-4 left-4 right-4 safe-area-mt flex gap-2">
+            <input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRenameSession();
+                if (e.key === 'Escape') setIsEditingName(false);
+              }}
+              autoFocus
+              className="flex-1 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium border border-white/20 outline-none"
+              placeholder="Session name..."
+            />
+            <button
+              onClick={handleRenameSession}
+              className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium"
+            >
+              Save
+            </button>
           </div>
         )}
 
@@ -458,24 +557,13 @@ const CameraScreen = () => {
               </div>
             </button>
 
-            {/* Share/Create button */}
-            {currentSession ? (
-              <QuickShare 
-                timeCode={currentSession.timeCode}
-                sessionName={currentSession.name}
-              />
-            ) : (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex flex-col items-center gap-1.5 text-white/80 hover:text-white transition-all active:scale-95"
-                disabled={recording}
-              >
-                <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                  <Plus className="w-6 h-6" />
-                </div>
-                <span className="text-[10px] font-medium">New</span>
-              </button>
-            )}
+            {/* Share button - always visible */}
+            <QuickShare 
+              timeCode={currentSession?.timeCode || ""}
+              sessionName={currentSession?.name || "My Session"}
+              onNeedSession={handleCreateSessionForShare}
+              hasSession={!!currentSession}
+            />
           </div>
         </div>
       )}
