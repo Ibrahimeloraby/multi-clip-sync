@@ -32,8 +32,7 @@ const FeedScreen = () => {
   const fetchFeedVideos = async () => {
     setLoading(true);
     try {
-      // Fetch public videos (all videos from completed sessions or recent uploads)
-      // For now, fetch recent videos with session info
+      // Fetch only published videos for the public feed
       const { data: videosData, error } = await supabase
         .from('videos')
         .select(`
@@ -42,6 +41,7 @@ const FeedScreen = () => {
           thumbnail_url,
           duration,
           uploaded_at,
+          published_at,
           session_id,
           sessions!inner (
             name,
@@ -51,7 +51,8 @@ const FeedScreen = () => {
             )
           )
         `)
-        .order('uploaded_at', { ascending: false })
+        .eq('published_to_feed', true)
+        .order('published_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;

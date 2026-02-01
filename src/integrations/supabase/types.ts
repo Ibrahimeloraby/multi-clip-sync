@@ -114,6 +114,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          is_live: boolean
           latitude: number | null
           longitude: number | null
           max_video_length: number
@@ -128,6 +129,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_live?: boolean
           latitude?: number | null
           longitude?: number | null
           max_video_length?: number
@@ -142,6 +144,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_live?: boolean
           latitude?: number | null
           longitude?: number | null
           max_video_length?: number
@@ -199,6 +202,8 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
+          published_at: string | null
+          published_to_feed: boolean
           session_id: string
           storage_path: string
           thumbnail_url: string | null
@@ -211,6 +216,8 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          published_at?: string | null
+          published_to_feed?: boolean
           session_id: string
           storage_path: string
           thumbnail_url?: string | null
@@ -223,6 +230,8 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          published_at?: string | null
+          published_to_feed?: boolean
           session_id?: string
           storage_path?: string
           thumbnail_url?: string | null
@@ -242,6 +251,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webrtc_signals: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          session_id: string
+          signal_data: Json
+          signal_type: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          session_id: string
+          signal_data: Json
+          signal_type: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          session_id?: string
+          signal_data?: Json
+          signal_type?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webrtc_signals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
             referencedColumns: ["id"]
           },
         ]
