@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  Users, Plus, Loader2, Upload, RefreshCw
+  Plus, Loader2, Upload, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
 import VideoTrimmer from "@/components/VideoTrimmer";
-import { CreateSessionModal, JoinSessionModal } from "@/components/SessionModals";
+import { CreateSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
 
 const CameraScreen = () => {
@@ -24,7 +24,7 @@ const CameraScreen = () => {
   // Session state - unified: once created, session is ready to share & record
   const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showJoinModal, setShowJoinModal] = useState(false);
+  
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -401,17 +401,8 @@ const CameraScreen = () => {
       {!showTrimmer && !uploading && (
         <div className="bg-black/90 backdrop-blur-lg safe-area-pb">
           <div className="flex items-center justify-around py-4 px-4 max-w-lg mx-auto">
-            {/* Join button */}
-            <button
-              onClick={() => setShowJoinModal(true)}
-              className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-              disabled={recording}
-            >
-              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                <Users className="w-5 h-5" />
-              </div>
-              <span className="text-[10px]">Join</span>
-            </button>
+            {/* Spacer for layout balance */}
+            <div className="w-12" />
 
             {/* Record button */}
             <button
@@ -478,10 +469,6 @@ const CameraScreen = () => {
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
         onSessionCreated={handleSessionCreated}
-      />
-      <JoinSessionModal
-        open={showJoinModal}
-        onOpenChange={setShowJoinModal}
       />
     </div>
   );
