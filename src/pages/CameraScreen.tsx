@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, Plus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
 import VideoTrimmer from "@/components/VideoTrimmer";
-import { CreateSessionModal } from "@/components/SessionModals";
+import { CreateSessionModal, JoinSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
 
 const CameraScreen = () => {
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -576,8 +577,25 @@ const CameraScreen = () => {
       {!showTrimmer && !uploading && (
         <div className="bg-black/90 backdrop-blur-lg safe-area-pb">
           <div className="flex items-center justify-between py-6 px-8">
-            {/* Left placeholder - keeps layout balanced */}
-            <div className="w-14 h-14" />
+            {/* Left - Create + Join buttons */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+                  disabled={!isAuthReady}
+                >
+                  <Plus className="w-5 h-5 text-white" />
+                </button>
+                <button
+                  onClick={() => setShowJoinModal(true)}
+                  className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+                  disabled={!isAuthReady}
+                >
+                  <Users className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
 
             {/* Center - Record button */}
             <button
@@ -619,6 +637,10 @@ const CameraScreen = () => {
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
         onSessionCreated={handleSessionCreated}
+      />
+      <JoinSessionModal
+        open={showJoinModal}
+        onOpenChange={setShowJoinModal}
       />
     </div>
   );
