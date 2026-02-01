@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, Loader2, Share2 } from "lucide-react";
+import { Copy, Check, Share2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -26,12 +26,24 @@ const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
       toast.success("Copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Couldn't copy");
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = inviteMessage;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      toast.success("Copied!");
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
   const shareNative = async () => {
-    if (navigator.share) {
+    // Check if Web Share API is available and we're in a secure context
+    if (navigator.share && window.isSecureContext) {
       try {
         await navigator.share({
           title: sessionName,
@@ -39,14 +51,22 @@ const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
           url: smartLink,
         });
         setOpen(false);
+        return;
       } catch (e: any) {
-        if (e.name !== 'AbortError') {
-          copyLink();
-        }
+        console.log('Share failed:', e);
+        if (e.name === 'AbortError') return;
+        // Fall through to SMS fallback
       }
-    } else {
-      copyLink();
     }
+    
+    // Fallback: Open SMS with pre-filled message
+    const smsBody = encodeURIComponent(inviteMessage);
+    window.location.href = `sms:?body=${smsBody}`;
+  };
+
+  const openSMS = () => {
+    const smsBody = encodeURIComponent(inviteMessage);
+    window.location.href = `sms:?body=${smsBody}`;
   };
 
   return (
@@ -69,14 +89,24 @@ const QuickShare = ({ timeCode, sessionName }: QuickShareProps) => {
           <span className="text-sm font-medium">{sessionName}</span>
         </div>
 
-        {/* Primary action - opens native share sheet with all apps */}
-        <button
-          onClick={shareNative}
-          className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors active:scale-[0.98] mb-3"
-        >
-          <Share2 className="w-5 h-5" />
-          <span className="font-medium">Share to Apps</span>
-        </button>
+        {/* Two share options side by side */}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <button
+            onClick={shareNative}
+            className="flex items-center justify-center gap-2 p-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors active:scale-[0.98]"
+          >
+            <Share2 className="w-5 h-5" />
+            <span className="font-medium text-sm">Share</span>
+          </button>
+          
+          <button
+            onClick={openSMS}
+            className="flex items-center justify-center gap-2 p-4 rounded-xl bg-green-500 text-white hover:bg-green-600 transition-colors active:scale-[0.98]"
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span className="font-medium text-sm">Message</span>
+          </button>
+        </div>
 
         {/* Copy link - secondary */}
         <button

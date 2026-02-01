@@ -5,7 +5,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Copy, Check, Share2, Play } from "lucide-react";
+import { Copy, Check, Share2, Play, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface PreInviteSheetProps {
@@ -34,26 +34,46 @@ const PreInviteSheet = ({
       toast.success("Copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Couldn't copy");
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = inviteMessage;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      toast.success("Copied!");
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
   const shareNative = async () => {
-    if (navigator.share) {
+    // Check if Web Share API is available and we're in a secure context
+    if (navigator.share && window.isSecureContext) {
       try {
         await navigator.share({
           title: sessionName,
           text: `Join my session`,
           url: smartLink,
         });
+        return;
       } catch (e: any) {
-        if (e.name !== 'AbortError') {
-          copyLink();
-        }
+        console.log('Share failed:', e);
+        if (e.name === 'AbortError') return;
+        // Fall through to SMS fallback
       }
-    } else {
-      copyLink();
     }
+    
+    // Fallback: Open SMS with pre-filled message
+    const smsBody = encodeURIComponent(inviteMessage);
+    window.location.href = `sms:?body=${smsBody}`;
+  };
+
+  const openSMS = () => {
+    const smsBody = encodeURIComponent(inviteMessage);
+    window.location.href = `sms:?body=${smsBody}`;
   };
 
   const handleGoLive = () => {
@@ -76,14 +96,24 @@ const PreInviteSheet = ({
           <p className="text-muted-foreground text-xs">Invite friends before going live</p>
         </div>
 
-        {/* Share to apps - opens native share with all messaging apps */}
-        <button
-          onClick={shareNative}
-          className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors active:scale-[0.98] mb-3"
-        >
-          <Share2 className="w-5 h-5" />
-          <span className="font-medium">Share to Apps</span>
-        </button>
+        {/* Two share options side by side */}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <button
+            onClick={shareNative}
+            className="flex items-center justify-center gap-2 p-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors active:scale-[0.98]"
+          >
+            <Share2 className="w-5 h-5" />
+            <span className="font-medium text-sm">Share</span>
+          </button>
+          
+          <button
+            onClick={openSMS}
+            className="flex items-center justify-center gap-2 p-4 rounded-xl bg-green-500 text-white hover:bg-green-600 transition-colors active:scale-[0.98]"
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span className="font-medium text-sm">Message</span>
+          </button>
+        </div>
 
         {/* Copy link - secondary */}
         <button
