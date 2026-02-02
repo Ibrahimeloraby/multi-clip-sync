@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, RefreshCw, Plus, Users, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet";
 
 const CameraScreen = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
@@ -31,6 +32,8 @@ const CameraScreen = () => {
   // Session state - unified: once created, session is ready to share & record
   const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string; ownerId?: string } | null>(null);
   
+  // Track if we've handled the join params
+  const joinHandledRef = useRef(false);
   
   // Discovery and nearby sessions state
   // Overlay states
@@ -50,6 +53,30 @@ const CameraScreen = () => {
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle join params from QuickJoin redirect
+  useEffect(() => {
+    const joinSessionId = searchParams.get('join');
+    const joinCode = searchParams.get('code');
+    const joinName = searchParams.get('name');
+    
+    if (joinSessionId && joinCode && !joinHandledRef.current) {
+      joinHandledRef.current = true;
+      
+      // Set the session context immediately
+      setCurrentSession({
+        id: joinSessionId,
+        name: decodeURIComponent(joinName || 'Session'),
+        timeCode: joinCode,
+        ownerId: undefined, // Not the owner
+      });
+      
+      // Clear the URL params to avoid re-triggering
+      setSearchParams({});
+      
+      console.log("Joined session via link:", joinSessionId);
+    }
+  }, [searchParams, setSearchParams]);
 
   // No recording time limit
 
@@ -776,16 +803,26 @@ const CameraScreen = () => {
           </div>
         )}
 
-        {/* Session indicator - tap to rename */}
+        {/* Session indicator - tap to rename (owner) or view (participant) */}
         {currentSession && !recording && !isEditingName && (
           <button
             onClick={() => {
-              setEditedName(currentSession.name);
-              setIsEditingName(true);
+              if (isSessionOwner) {
+                setEditedName(currentSession.name);
+                setIsEditingName(true);
+              }
             }}
-            className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium safe-area-mt hover:bg-black/70 transition-colors"
+            className={`absolute top-4 left-4 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium safe-area-mt transition-colors flex items-center gap-2 ${
+              isSessionOwner 
+                ? 'bg-black/50 hover:bg-black/70' 
+                : 'bg-yellow-500/90 text-black'
+            }`}
           >
-            📹 {currentSession.name} <span className="text-white/50 ml-1">✎</span>
+            {isSessionOwner ? (
+              <>📹 {currentSession.name} <span className="text-white/50">✎</span></>
+            ) : (
+              <>🎬 Recording to: {currentSession.name}</>
+            )}
           </button>
         )}
 

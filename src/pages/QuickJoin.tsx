@@ -133,10 +133,10 @@ const QuickJoin = () => {
         }
       }
 
-      // Navigate to session with auto-record
-      console.log("Navigating to session:", session.id);
-      toast.success("Starting camera...");
-      navigate(`/session/${session.id}?autoRecord=true`);
+      // Navigate directly to camera with session context for frictionless recording
+      console.log("Navigating to camera with session:", session.id);
+      toast.success("Ready to record!");
+      navigate(`/?join=${session.id}&code=${session.time_code}&name=${encodeURIComponent(session.name)}`);
 
     } catch (error: any) {
       console.error("Error joining session:", error);
@@ -146,12 +146,12 @@ const QuickJoin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="text-center">
-        <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 animate-pulse">
-          <Video className="w-8 h-8 text-primary-foreground" />
+        <div className="w-16 h-16 rounded-2xl bg-yellow-400 flex items-center justify-center mx-auto mb-4 animate-pulse">
+          <Video className="w-8 h-8 text-black" />
         </div>
-        <p className="text-muted-foreground flex items-center gap-2 justify-center">
+        <p className="text-yellow-400 flex items-center gap-2 justify-center font-medium">
           <Loader2 className="w-4 h-4 animate-spin" />
           {status}
         </p>
