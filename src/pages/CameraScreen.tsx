@@ -779,7 +779,13 @@ const CameraScreen = () => {
               onGoLive={isSessionOwner ? handleGoLive : undefined}
               onShowNearby={handleShowNearby}
               onShare={() => setTriggerShare(true)}
-              onMonitor={isSessionOwner && currentSession ? () => setShowLiveMonitor(true) : undefined}
+              onMonitor={currentSession ? () => {
+                if (isSessionOwner) {
+                  setShowLiveMonitor(true);
+                } else {
+                  toast.info("Only the session owner can monitor participants");
+                }
+              } : undefined}
             />
           </div>
         )}
