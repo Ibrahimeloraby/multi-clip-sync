@@ -24,7 +24,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import VideoTrimmer from "@/components/VideoTrimmer";
+import { VideoEditor, VideoEditMetadata } from "@/components/video-editor";
 
 interface Session {
   id: string;
@@ -405,42 +405,26 @@ const LibraryScreen = () => {
     }
   };
 
-  const handleTrimComplete = async (trimmedBlob: Blob) => {
+  const handleEditComplete = async (editedBlob: Blob, metadata: VideoEditMetadata) => {
     if (!editingVideo) return;
     
     try {
-      toast.info("Saving trimmed video...");
+      toast.info("Saving edited video...");
       
       const { data: { session: authSession } } = await supabase.auth.getSession();
       if (!authSession?.user) throw new Error("Not authenticated");
 
-      // Upload new trimmed video
-      const newPath = editingVideo.storage_path.replace('.webm', `-trimmed-${Date.now()}.webm`);
+      // Upload edited video
+      const newPath = editingVideo.storage_path.replace('.webm', `-edited-${Date.now()}.webm`);
       
       const { error: uploadError } = await supabase.storage
         .from('videos')
-        .upload(newPath, trimmedBlob);
+        .upload(newPath, editedBlob);
 
       if (uploadError) throw uploadError;
 
-      // Get new duration
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      const newDuration = await new Promise<number>((resolve) => {
-        video.onloadedmetadata = () => {
-          if (video.duration === Infinity || isNaN(video.duration)) {
-            video.currentTime = Number.MAX_SAFE_INTEGER;
-            video.ontimeupdate = () => {
-              video.ontimeupdate = null;
-              resolve(Math.max(1, Math.floor(video.duration)));
-            };
-          } else {
-            resolve(Math.max(1, Math.floor(video.duration)));
-          }
-        };
-        video.onerror = () => resolve(editingVideo.duration);
-        video.src = URL.createObjectURL(trimmedBlob);
-      });
+      // Calculate new duration from trim
+      const newDuration = Math.max(1, Math.floor(metadata.trimEnd - metadata.trimStart));
 
       const { data: { publicUrl } } = supabase.storage
         .from('videos')
@@ -472,12 +456,12 @@ const LibraryScreen = () => {
         ) || []
       }));
 
-      toast.success("Video trimmed successfully!");
+      toast.success("Video saved successfully!");
       setEditingVideo(null);
       setEditingBlob(null);
     } catch (error: any) {
-      console.error("Trim save error:", error);
-      toast.error(error.message || "Failed to save trimmed video");
+      console.error("Edit save error:", error);
+      toast.error(error.message || "Failed to save edited video");
     }
   };
 
@@ -847,29 +831,18 @@ const LibraryScreen = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Video Trimmer Modal */}
+      {/* Video Editor Modal */}
       {editingVideo && editingBlob && (
-        <div className="fixed inset-0 z-50 bg-library/95 p-4 overflow-auto">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-library-text">Edit Video</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={cancelEditing}
-                className="text-library-text hover:bg-library-surface-hover"
-              >
-                Cancel
-              </Button>
-            </div>
-            <VideoTrimmer
+        <Dialog open={true} onOpenChange={() => cancelEditing()}>
+          <DialogContent className="max-w-full h-[100dvh] p-0 border-0 bg-background sm:max-w-2xl sm:h-[85vh] sm:rounded-xl">
+            <VideoEditor
               videoBlob={editingBlob}
               maxDuration={300}
-              onTrimComplete={handleTrimComplete}
+              onComplete={handleEditComplete}
               onCancel={cancelEditing}
             />
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

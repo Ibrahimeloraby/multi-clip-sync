@@ -1,0 +1,78 @@
+import { Button } from "@/components/ui/button";
+import { RotateCw, FlipHorizontal, FlipVertical } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface RotateControlsProps {
+  rotation: number;
+  flipH: boolean;
+  flipV: boolean;
+  onRotationChange: (rotation: number) => void;
+  onFlipHChange: (flip: boolean) => void;
+  onFlipVChange: (flip: boolean) => void;
+}
+
+const RotateControls = ({
+  rotation,
+  flipH,
+  flipV,
+  onRotationChange,
+  onFlipHChange,
+  onFlipVChange,
+}: RotateControlsProps) => {
+  const rotate90 = () => {
+    onRotationChange((rotation + 90) % 360);
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="text-center">
+        <p className="text-2xl font-bold">{rotation}°</p>
+        <p className="text-xs text-muted-foreground">Rotation</p>
+      </div>
+
+      <div className="flex justify-center gap-4">
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={rotate90}
+          className="flex flex-col gap-1 h-auto py-3 px-4 touch-manipulation"
+        >
+          <RotateCw className="w-6 h-6" />
+          <span className="text-xs">Rotate 90°</span>
+        </Button>
+
+        <Button
+          variant={flipH ? "default" : "outline"}
+          size="lg"
+          onClick={() => onFlipHChange(!flipH)}
+          className={cn(
+            "flex flex-col gap-1 h-auto py-3 px-4 touch-manipulation",
+            flipH && "ring-2 ring-primary ring-offset-2"
+          )}
+        >
+          <FlipHorizontal className="w-6 h-6" />
+          <span className="text-xs">Flip H</span>
+        </Button>
+
+        <Button
+          variant={flipV ? "default" : "outline"}
+          size="lg"
+          onClick={() => onFlipVChange(!flipV)}
+          className={cn(
+            "flex flex-col gap-1 h-auto py-3 px-4 touch-manipulation",
+            flipV && "ring-2 ring-primary ring-offset-2"
+          )}
+        >
+          <FlipVertical className="w-6 h-6" />
+          <span className="text-xs">Flip V</span>
+        </Button>
+      </div>
+
+      <p className="text-xs text-muted-foreground text-center">
+        Rotate or flip your video
+      </p>
+    </div>
+  );
+};
+
+export default RotateControls;
