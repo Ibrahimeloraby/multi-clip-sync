@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Film, Crown, Play, Download, Trash2, Loader2, ChevronRight, Clock,
-  Heart, MessageCircle, Share2, Volume2, VolumeX, Camera
+  Heart, MessageCircle, Share2, Volume2, VolumeX, Camera, Scissors
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
+import VideoTrimmer from "@/components/VideoTrimmer";
 
 interface Session {
   id: string;
@@ -185,6 +186,10 @@ const LibraryScreen = () => {
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
   const [videoCounts, setVideoCounts] = useState<Record<string, number>>({});
+  const [editingVideo, setEditingVideo] = useState<VideoItem | null>(null);
+  const [editingBlob, setEditingBlob] = useState<Blob | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   
   // Feed tab state
   const [feedLoading, setFeedLoading] = useState(true);
@@ -372,7 +377,113 @@ const LibraryScreen = () => {
       }
     } catch (error) {
       toast.error("Download failed");
+    } finally {
+      setDownloadingId(null);
     }
+  };
+
+  const startEditingVideo = async (video: VideoItem) => {
+    setLoadingEdit(video.id);
+    
+    try {
+      toast.info("Loading video for editing...");
+      const { data } = await supabase.storage
+        .from('videos')
+        .download(video.storage_path);
+      
+      if (data) {
+        setEditingBlob(data);
+        setEditingVideo(video);
+      } else {
+        toast.error("Failed to load video for editing");
+      }
+    } catch (error) {
+      console.error("Failed to load video:", error);
+      toast.error("Failed to load video");
+    } finally {
+      setLoadingEdit(null);
+    }
+  };
+
+  const handleTrimComplete = async (trimmedBlob: Blob) => {
+    if (!editingVideo) return;
+    
+    try {
+      toast.info("Saving trimmed video...");
+      
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.user) throw new Error("Not authenticated");
+
+      // Upload new trimmed video
+      const newPath = editingVideo.storage_path.replace('.webm', `-trimmed-${Date.now()}.webm`);
+      
+      const { error: uploadError } = await supabase.storage
+        .from('videos')
+        .upload(newPath, trimmedBlob);
+
+      if (uploadError) throw uploadError;
+
+      // Get new duration
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      const newDuration = await new Promise<number>((resolve) => {
+        video.onloadedmetadata = () => {
+          if (video.duration === Infinity || isNaN(video.duration)) {
+            video.currentTime = Number.MAX_SAFE_INTEGER;
+            video.ontimeupdate = () => {
+              video.ontimeupdate = null;
+              resolve(Math.max(1, Math.floor(video.duration)));
+            };
+          } else {
+            resolve(Math.max(1, Math.floor(video.duration)));
+          }
+        };
+        video.onerror = () => resolve(editingVideo.duration);
+        video.src = URL.createObjectURL(trimmedBlob);
+      });
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(newPath);
+
+      // Update video record
+      const { error: dbError } = await supabase
+        .from('videos')
+        .update({
+          storage_path: newPath,
+          thumbnail_url: publicUrl,
+          duration: newDuration,
+        })
+        .eq('id', editingVideo.id);
+
+      if (dbError) throw dbError;
+
+      // Delete old file
+      await supabase.storage.from('videos').remove([editingVideo.storage_path]);
+
+      // Update local state
+      const sessionId = editingVideo.session_id;
+      setVideos(prev => ({
+        ...prev,
+        [sessionId]: prev[sessionId]?.map(v => 
+          v.id === editingVideo.id 
+            ? { ...v, storage_path: newPath, duration: newDuration }
+            : v
+        ) || []
+      }));
+
+      toast.success("Video trimmed successfully!");
+      setEditingVideo(null);
+      setEditingBlob(null);
+    } catch (error: any) {
+      console.error("Trim save error:", error);
+      toast.error(error.message || "Failed to save trimmed video");
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingVideo(null);
+    setEditingBlob(null);
   };
 
   // Feed scroll handling
@@ -556,36 +667,63 @@ const LibraryScreen = () => {
                                 </div>
 
                                 <div className="flex items-center gap-1">
+                                  {/* Edit button - owners can edit all, users can edit their own */}
+                                  {(isOwner || video.user_id === userId) && (
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-8 w-8 text-library-accent hover:bg-library-surface-hover" 
+                                      onClick={() => startEditingVideo(video)}
+                                      disabled={loadingEdit === video.id}
+                                    >
+                                      {loadingEdit === video.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <Scissors className="w-4 h-4" />
+                                      )}
+                                    </Button>
+                                  )}
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
                                     className="h-8 w-8 text-library-accent hover:bg-library-surface-hover" 
-                                    onClick={() => downloadVideo(video)}
+                                    onClick={() => {
+                                      setDownloadingId(video.id);
+                                      downloadVideo(video);
+                                    }}
+                                    disabled={downloadingId === video.id}
                                   >
-                                    <Download className="w-4 h-4" />
+                                    {downloadingId === video.id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Download className="w-4 h-4" />
+                                    )}
                                   </Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-library-surface-hover">
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent className="bg-library-surface border-library-border">
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle className="text-library-text">Delete video?</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-library-text-muted">This cannot be undone.</AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel className="bg-library-surface border-library-border text-library-text hover:bg-library-surface-hover">Cancel</AlertDialogCancel>
-                                        <AlertDialogAction 
-                                          onClick={() => handleDeleteVideo(video.id, session.id)}
-                                          className="bg-destructive text-white"
-                                        >
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                  {/* Delete button - users can only delete their own videos */}
+                                  {video.user_id === userId && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-library-surface-hover">
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent className="bg-library-surface border-library-border">
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle className="text-library-text">Delete video?</AlertDialogTitle>
+                                          <AlertDialogDescription className="text-library-text-muted">This cannot be undone.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel className="bg-library-surface border-library-border text-library-text hover:bg-library-surface-hover">Cancel</AlertDialogCancel>
+                                          <AlertDialogAction 
+                                            onClick={() => handleDeleteVideo(video.id, session.id)}
+                                            className="bg-destructive text-white"
+                                          >
+                                            Delete
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
                                 </div>
                               </div>
                             ))
@@ -708,6 +846,31 @@ const LibraryScreen = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Video Trimmer Modal */}
+      {editingVideo && editingBlob && (
+        <div className="fixed inset-0 z-50 bg-library/95 p-4 overflow-auto">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-library-text">Edit Video</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={cancelEditing}
+                className="text-library-text hover:bg-library-surface-hover"
+              >
+                Cancel
+              </Button>
+            </div>
+            <VideoTrimmer
+              videoBlob={editingBlob}
+              maxDuration={300}
+              onTrimComplete={handleTrimComplete}
+              onCancel={cancelEditing}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
