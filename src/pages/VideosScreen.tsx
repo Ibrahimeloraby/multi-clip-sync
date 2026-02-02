@@ -109,6 +109,7 @@ const VideosScreen = () => {
   const [editingBlob, setEditingBlob] = useState<Blob | null>(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [videoCounts, setVideoCounts] = useState<Record<string, number>>({});
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -225,24 +226,41 @@ const VideosScreen = () => {
   };
 
   const downloadVideo = async (video: VideoItem) => {
+    if (downloadingId) return;
+    setDownloadingId(video.id);
+    
     try {
+      toast.info("Preparing download...");
+      
       const { data } = await supabase.storage
         .from('videos')
         .download(video.storage_path);
       
       if (data) {
         const url = URL.createObjectURL(data);
+        const filename = `timecode-${video.duration}s-${Date.now()}.webm`;
+        
+        // Create download link
         const a = document.createElement('a');
         a.href = url;
-        a.download = `video-${video.id}.webm`;
+        a.download = filename;
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success("Download started");
+        
+        // Cleanup after a short delay
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
+        
+        toast.success("Video saved to device!");
       }
     } catch (error) {
-      toast.error("Download failed");
+      console.error("Download error:", error);
+      toast.error("Download failed. Try again.");
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -470,8 +488,18 @@ const VideosScreen = () => {
                                 <Scissors className="w-4 h-4" />
                               </Button>
                             )}
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadVideo(video)}>
-                              <Download className="w-4 h-4" />
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8" 
+                              onClick={() => downloadVideo(video)}
+                              disabled={downloadingId === video.id}
+                            >
+                              {downloadingId === video.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Download className="w-4 h-4" />
+                              )}
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
