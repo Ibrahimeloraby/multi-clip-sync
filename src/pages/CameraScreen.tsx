@@ -239,7 +239,7 @@ const CameraScreen = () => {
             owner_id: authSession.user.id,
             name: sessionName,
             time_code: timeCode,
-            mode: 'collaborative',
+            mode: 'global', // Valid modes: 'global' or 'proximity'
             tier: 'free',
           })
           .select()
@@ -457,7 +457,7 @@ const CameraScreen = () => {
           owner_id: authSession.user.id,
           name: sessionName,
           time_code: timeCode,
-          mode: 'collaborative',
+          mode: 'global', // Valid modes: 'global' or 'proximity'
           tier: 'free',
         })
         .select()
@@ -486,11 +486,19 @@ const CameraScreen = () => {
   const fetchNearbySessions = async () => {
     setLoadingNearby(true);
     try {
-      // Get user's current location
+      // Check if geolocation is available
+      if (!navigator.geolocation) {
+        toast.error("Location not supported on this device");
+        setLoadingNearby(false);
+        return;
+      }
+
+      // Get user's current location with better error handling for PWA
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000, // Increased timeout for PWA
+          maximumAge: 0,
         });
       });
 
@@ -501,7 +509,7 @@ const CameraScreen = () => {
         .from('sessions')
         .select('id, name, time_code, latitude, longitude')
         .eq('is_active', true)
-        .eq('mode', 'collaborative')
+        .eq('mode', 'proximity')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
 
@@ -524,14 +532,23 @@ const CameraScreen = () => {
       setNearbySessions(nearby);
       
       if (nearby.length === 0) {
-        toast.info("No nearby sessions found");
+        toast.info("No nearby sessions found within 100m");
       }
     } catch (error: any) {
       console.error("Failed to fetch nearby sessions:", error);
+      
+      // Better error handling for geolocation errors
       if (error.code === 1) {
-        toast.error("Location access denied. Enable GPS to find nearby sessions.");
+        // PERMISSION_DENIED
+        toast.error("Location permission denied. Please enable in your browser/device settings.");
+      } else if (error.code === 2) {
+        // POSITION_UNAVAILABLE
+        toast.error("Location unavailable. Make sure GPS is enabled.");
+      } else if (error.code === 3) {
+        // TIMEOUT
+        toast.error("Location request timed out. Try again.");
       } else {
-        toast.error("Failed to find nearby sessions");
+        toast.error("Failed to get location. Check your settings.");
       }
     } finally {
       setLoadingNearby(false);
