@@ -132,71 +132,77 @@ const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end pointer-events-none">
+    <div className="fixed inset-0 z-50 pointer-events-none">
       {/* Tap outside to close */}
       <div 
         className="absolute inset-0 pointer-events-auto" 
         onClick={handleClose}
       />
       
-      {/* Bottom sheet - 25% height, more transparent */}
-      <div className="relative bg-black/70 backdrop-blur-md border-t border-[#FFFF00]/40 rounded-t-2xl safe-area-pb pointer-events-auto h-[25vh] flex flex-col">
-        {/* Handle */}
-        <div className="flex justify-center pt-2 pb-1">
-          <div className="w-8 h-1 bg-[#FFFF00]/50 rounded-full" />
-        </div>
-        
-        {/* Header */}
-        <div className="flex items-center justify-between px-3 pb-2">
-          <div className="flex items-center gap-1.5 bg-[#FFFF00]/90 text-black px-2 py-1 rounded-full text-[10px] font-bold">
-            <Radio className="w-3 h-3" />
-            Nearby
+      {/* Floating card - bottom left, compact */}
+      <div className="absolute bottom-24 left-4 right-16 pointer-events-auto">
+        <div className="bg-black/80 backdrop-blur-xl border border-[#FFFF00]/50 rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
+          {/* Header */}
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#FFFF00]/20">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-[#FFFF00] flex items-center justify-center">
+                <Radio className="w-3.5 h-3.5 text-black" />
+              </div>
+              <span className="text-white font-semibold text-sm">Nearby</span>
+            </div>
+            
+            <button
+              onClick={handleClose}
+              className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+            >
+              <X className="w-3.5 h-3.5 text-white/70" />
+            </button>
           </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClose}
-            className="rounded-full bg-black/40 text-[#FFFF00] hover:bg-black/60 border border-[#FFFF00]/30 h-6 w-6"
-          >
-            <X className="w-3 h-3" />
-          </Button>
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-3 pb-2">
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-5 h-5 animate-spin text-[#FFFF00]" />
-            </div>
-          ) : nearbySessions.length === 0 ? (
-            <div className="flex items-center justify-center h-full gap-2">
-              <MapPin className="w-4 h-4 text-[#FFFF00]/60" />
-              <span className="text-white/60 text-xs">No sessions nearby</span>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              {nearbySessions.map((session) => (
-                <button
-                  key={session.id}
-                  onClick={() => {
-                    onJoinSession?.(session.id, session.time_code, session.name);
-                    handleClose();
-                  }}
-                  className="w-full flex items-center gap-2 p-2 bg-[#FFFF00]/10 border border-[#FFFF00]/20 rounded-lg active:scale-[0.98] transition-transform text-left"
-                >
-                  <div className="w-8 h-8 rounded-full bg-black/50 border border-[#FFFF00]/30 flex items-center justify-center shrink-0">
-                    <User className="w-4 h-4 text-[#FFFF00]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white text-xs truncate">{session.name}</p>
-                    <p className="text-[10px] text-white/50">{formatDistance(session.distance)}</p>
-                  </div>
-                  <span className="text-[#FFFF00] text-xs font-bold">Join</span>
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Content */}
+          <div className="max-h-32 overflow-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-6 gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-[#FFFF00]" />
+                <span className="text-white/50 text-xs">Scanning...</span>
+              </div>
+            ) : nearbySessions.length === 0 ? (
+              <div className="flex items-center justify-center py-6 gap-2">
+                <MapPin className="w-4 h-4 text-[#FFFF00]/50" />
+                <span className="text-white/50 text-xs">No sessions nearby</span>
+              </div>
+            ) : (
+              <div className="p-2 space-y-1">
+                {nearbySessions.map((session) => (
+                  <button
+                    key={session.id}
+                    onClick={() => {
+                      onJoinSession?.(session.id, session.time_code, session.name);
+                      handleClose();
+                    }}
+                    className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-[#FFFF00]/5 hover:bg-[#FFFF00]/15 active:scale-[0.98] transition-all text-left group"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-[#FFFF00]/20 border border-[#FFFF00]/30 flex items-center justify-center shrink-0">
+                      {session.is_live ? (
+                        <Radio className="w-4 h-4 text-red-400" />
+                      ) : (
+                        <User className="w-4 h-4 text-[#FFFF00]" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-white text-xs truncate">{session.name}</p>
+                      <p className="text-[10px] text-white/40">
+                        {session.participant_count} • {formatDistance(session.distance)}
+                      </p>
+                    </div>
+                    <span className="text-[#FFFF00] text-[10px] font-bold uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                      Join →
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
