@@ -132,11 +132,22 @@ const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {/* Main view */}
-      <div className="flex-1 relative">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end pointer-events-none">
+      {/* Tap outside to close */}
+      <div 
+        className="absolute inset-0 pointer-events-auto" 
+        onClick={handleClose}
+      />
+      
+      {/* Bottom sheet */}
+      <div className="relative bg-black border-t border-[#FFFF00]/30 rounded-t-3xl safe-area-pb pointer-events-auto max-h-[50vh] flex flex-col">
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div className="w-10 h-1 bg-[#FFFF00]/40 rounded-full" />
+        </div>
+        
         {/* Header */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between safe-area-mt">
+        <div className="flex items-center justify-between px-4 pb-3">
           <div className="flex items-center gap-2 bg-[#FFFF00] text-black px-3 py-1.5 rounded-full text-xs font-bold">
             <Radio className="w-4 h-4" />
             Nearby Sessions
@@ -146,85 +157,62 @@ const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverl
             variant="ghost"
             size="icon"
             onClick={handleClose}
-            className="rounded-full bg-black/60 backdrop-blur-sm text-[#FFFF00] hover:bg-black/80 border border-[#FFFF00]/30"
+            className="rounded-full bg-black/60 text-[#FFFF00] hover:bg-black/80 border border-[#FFFF00]/30 h-8 w-8"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </Button>
         </div>
 
-        {/* Centered content */}
-        <div className="absolute inset-0 flex items-center justify-center px-6">
+        {/* Content */}
+        <div className="flex-1 overflow-auto px-4 pb-4">
           {loading ? (
-            <div className="text-center">
-              <Loader2 className="w-10 h-10 animate-spin text-[#FFFF00] mx-auto mb-3" />
-              <p className="text-white/60 text-sm">Finding nearby TimeCode users...</p>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-[#FFFF00]" />
+              <span className="ml-2 text-white/60 text-sm">Finding nearby...</span>
             </div>
           ) : nearbySessions.length === 0 ? (
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-[#FFFF00]/20 flex items-center justify-center mx-auto mb-3 border border-[#FFFF00]/30">
-                <MapPin className="w-8 h-8 text-[#FFFF00]" />
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-12 h-12 rounded-full bg-[#FFFF00]/20 flex items-center justify-center mb-2 border border-[#FFFF00]/30">
+                <MapPin className="w-6 h-6 text-[#FFFF00]" />
               </div>
-              <h2 className="text-lg font-bold text-white mb-1">No Sessions Nearby</h2>
-              <p className="text-sm text-white/60">No active sessions within 10km</p>
+              <p className="text-white font-medium text-sm">No Sessions Nearby</p>
+              <p className="text-xs text-white/50">No active sessions within 10km</p>
             </div>
           ) : (
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-[#FFFF00]/20 flex items-center justify-center mx-auto mb-3 border border-[#FFFF00]/30">
-                <Radio className="w-8 h-8 text-[#FFFF00]" />
-              </div>
-              <h2 className="text-lg font-bold text-white mb-1">
-                {nearbySessions.length} Session{nearbySessions.length !== 1 ? 's' : ''} Nearby
-              </h2>
-              <p className="text-sm text-white/60">Tap to join</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom panel - Session list */}
-      <div className="bg-black border-t border-[#FFFF00]/20 safe-area-pb max-h-[40vh] overflow-auto">
-        <div className="px-4 py-3 space-y-2">
-          {loading ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader2 className="w-5 h-5 animate-spin text-[#FFFF00]/50" />
-            </div>
-          ) : nearbySessions.length === 0 ? (
-            <div className="flex items-center justify-center py-6 text-center">
-              <span className="text-sm text-white/40">Pull down to refresh</span>
-            </div>
-          ) : (
-            nearbySessions.map((session) => (
-              <button
-                key={session.id}
-                onClick={() => {
-                  onJoinSession?.(session.id, session.time_code, session.name);
-                  handleClose();
-                }}
-                className="w-full flex items-center gap-3 p-3 bg-[#FFFF00]/10 border border-[#FFFF00]/20 rounded-xl active:scale-[0.98] transition-transform text-left hover:bg-[#FFFF00]/20"
-              >
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-black border border-[#FFFF00]/30 flex items-center justify-center">
-                    {session.is_live ? (
-                      <Radio className="w-5 h-5 text-red-500" />
-                    ) : (
-                      <User className="w-5 h-5 text-[#FFFF00]" />
+            <div className="space-y-2">
+              {nearbySessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => {
+                    onJoinSession?.(session.id, session.time_code, session.name);
+                    handleClose();
+                  }}
+                  className="w-full flex items-center gap-3 p-3 bg-[#FFFF00]/10 border border-[#FFFF00]/20 rounded-xl active:scale-[0.98] transition-transform text-left hover:bg-[#FFFF00]/20"
+                >
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full bg-black border border-[#FFFF00]/30 flex items-center justify-center">
+                      {session.is_live ? (
+                        <Radio className="w-5 h-5 text-red-500" />
+                      ) : (
+                        <User className="w-5 h-5 text-[#FFFF00]" />
+                      )}
+                    </div>
+                    {session.is_live && (
+                      <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 animate-pulse" />
                     )}
                   </div>
-                  {session.is_live && (
-                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white truncate">{session.name}</p>
-                  <p className="text-xs text-white/50">
-                    {session.participant_count} participant{session.participant_count !== 1 ? 's' : ''} • {formatDistance(session.distance)} away
-                  </p>
-                </div>
-                <div className="text-[#FFFF00] text-sm font-bold">
-                  Join
-                </div>
-              </button>
-            ))
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-white truncate">{session.name}</p>
+                    <p className="text-xs text-white/50">
+                      {session.participant_count} participant{session.participant_count !== 1 ? 's' : ''} • {formatDistance(session.distance)} away
+                    </p>
+                  </div>
+                  <div className="text-[#FFFF00] text-sm font-bold">
+                    Join
+                  </div>
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>
