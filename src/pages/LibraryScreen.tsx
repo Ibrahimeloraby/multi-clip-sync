@@ -417,28 +417,34 @@ const LibraryScreen = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background flex flex-col">
+    <div className="fixed inset-0 bg-library flex flex-col">
       {/* Header with tabs */}
-      <header className="bg-background/95 backdrop-blur-lg border-b border-border safe-area-pt z-50">
+      <header className="bg-library-surface/95 backdrop-blur-lg border-b border-library-border safe-area-pt z-50">
         <div className="px-4 pt-4 pb-2">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-xl font-bold">Library</h1>
+            <h1 className="text-xl font-bold text-library-text">Library</h1>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate('/')}
-              className="rounded-full"
+              className="rounded-full text-library-accent hover:bg-library-surface-hover"
             >
               <Camera className="w-5 h-5" />
             </Button>
           </div>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="videos" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-2 bg-library-surface border border-library-border">
+              <TabsTrigger 
+                value="videos" 
+                className="flex items-center gap-2 text-library-text-muted data-[state=active]:bg-library-accent data-[state=active]:text-black data-[state=active]:font-semibold"
+              >
                 <Film className="w-4 h-4" />
                 My Videos
               </TabsTrigger>
-              <TabsTrigger value="feed" className="flex items-center gap-2">
+              <TabsTrigger 
+                value="feed" 
+                className="flex items-center gap-2 text-library-text-muted data-[state=active]:bg-library-accent data-[state=active]:text-black data-[state=active]:font-semibold"
+              >
                 <Play className="w-4 h-4" />
                 Feed
               </TabsTrigger>
@@ -451,16 +457,18 @@ const LibraryScreen = () => {
       <div className="flex-1 overflow-hidden">
         {/* Videos Tab */}
         {activeTab === 'videos' && (
-          <div className="h-full overflow-auto pb-4">
+          <div className="h-full overflow-auto pb-4 bg-library">
             {videosLoading ? (
               <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                <Loader2 className="w-8 h-8 animate-spin text-library-accent" />
               </div>
             ) : sessions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full px-4">
-                <Film className="w-12 h-12 mb-3 text-muted-foreground/40" />
-                <h3 className="font-medium mb-1">No sessions yet</h3>
-                <p className="text-sm text-muted-foreground text-center">
+                <div className="w-16 h-16 rounded-full bg-library-surface border-2 border-library-accent flex items-center justify-center mb-4">
+                  <Film className="w-8 h-8 text-library-accent" />
+                </div>
+                <h3 className="font-semibold text-library-text mb-1">No sessions yet</h3>
+                <p className="text-sm text-library-text-muted text-center">
                   Create or join a session to start recording
                 </p>
               </div>
@@ -473,29 +481,29 @@ const LibraryScreen = () => {
                   const videoCount = videoCounts[session.id] || 0;
 
                   return (
-                    <div key={session.id} className="bg-card rounded-xl border border-border overflow-hidden">
+                    <div key={session.id} className="bg-library-surface rounded-xl border border-library-border overflow-hidden">
                       <button
                         onClick={() => toggleSession(session)}
-                        className="w-full p-4 flex items-center justify-between hover:bg-muted/30 transition-colors touch-manipulation"
+                        className="w-full p-4 flex items-center justify-between hover:bg-library-surface-hover transition-colors touch-manipulation"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Film className="w-5 h-5 text-primary" />
+                          <div className="w-10 h-10 rounded-lg bg-library-accent/20 border border-library-accent/50 flex items-center justify-center">
+                            <Film className="w-5 h-5 text-library-accent" />
                           </div>
                           <div className="text-left">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{session.name}</span>
+                              <span className="font-medium text-library-text">{session.name}</span>
                               {isOwner && (
-                                <Badge variant="secondary" className="text-[10px] py-0">
+                                <Badge className="text-[10px] py-0 bg-library-accent text-black border-0">
                                   <Crown className="w-2.5 h-2.5 mr-0.5" />
                                   Owner
                                 </Badge>
                               )}
                               {!session.is_active && (
-                                <Badge variant="outline" className="text-[10px] py-0">Completed</Badge>
+                                <Badge variant="outline" className="text-[10px] py-0 border-library-border text-library-text-muted">Completed</Badge>
                               )}
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                            <div className="flex items-center gap-3 text-xs text-library-text-muted mt-0.5">
                               <span className="flex items-center gap-1">
                                 <Film className="w-3 h-3" />
                                 {isOwner ? videoCount : 'Your clips'}
@@ -507,64 +515,72 @@ const LibraryScreen = () => {
                             </div>
                           </div>
                         </div>
-                        <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                        <ChevronRight className={`w-5 h-5 text-library-accent transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                       </button>
 
                       {isExpanded && (
-                        <div className="border-t border-border px-4 py-3 space-y-2 bg-muted/20">
+                        <div className="border-t border-library-border px-4 py-3 space-y-2 bg-library/50">
                           {!isOwner && (
-                            <p className="text-xs text-muted-foreground mb-2">
+                            <p className="text-xs text-library-text-muted mb-2">
                               You can only see your own videos. Session owner can see all.
                             </p>
                           )}
                           {sessionVideos.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">
+                            <p className="text-sm text-library-text-muted text-center py-4">
                               No videos yet
                             </p>
                           ) : (
                             sessionVideos.map((video) => (
-                              <div key={video.id} className="flex items-center gap-3 p-2 bg-background rounded-lg">
+                              <div key={video.id} className="flex items-center gap-3 p-2 bg-library-surface rounded-lg border border-library-border">
                                 <button
                                   onClick={() => setPlayingVideo(video)}
-                                  className="relative w-16 h-10 bg-muted rounded overflow-hidden shrink-0"
+                                  className="relative w-16 h-10 bg-library rounded overflow-hidden shrink-0 border border-library-border"
                                 >
                                   {video.thumbnail_url ? (
                                     <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover" />
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center">
-                                      <Film className="w-4 h-4 text-muted-foreground/50" />
+                                      <Film className="w-4 h-4 text-library-text-muted" />
                                     </div>
                                   )}
                                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                    <Play className="w-4 h-4 text-white" fill="white" />
+                                    <Play className="w-4 h-4 text-library-accent" fill="hsl(60, 100%, 50%)" />
                                   </div>
                                 </button>
 
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{video.duration}s clip</p>
-                                  <p className="text-xs text-muted-foreground">
+                                  <p className="text-sm font-medium truncate text-library-text">{video.duration}s clip</p>
+                                  <p className="text-xs text-library-text-muted">
                                     {new Date(video.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 </div>
 
                                 <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadVideo(video)}>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-library-accent hover:bg-library-surface-hover" 
+                                    onClick={() => downloadVideo(video)}
+                                  >
                                     <Download className="w-4 h-4" />
                                   </Button>
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-library-surface-hover">
                                         <Trash2 className="w-4 h-4" />
                                       </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent>
+                                    <AlertDialogContent className="bg-library-surface border-library-border">
                                       <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete video?</AlertDialogTitle>
-                                        <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+                                        <AlertDialogTitle className="text-library-text">Delete video?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-library-text-muted">This cannot be undone.</AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteVideo(video.id, session.id)}>
+                                        <AlertDialogCancel className="bg-library-surface border-library-border text-library-text hover:bg-library-surface-hover">Cancel</AlertDialogCancel>
+                                        <AlertDialogAction 
+                                          onClick={() => handleDeleteVideo(video.id, session.id)}
+                                          className="bg-destructive text-white"
+                                        >
                                           Delete
                                         </AlertDialogAction>
                                       </AlertDialogFooter>
@@ -576,8 +592,7 @@ const LibraryScreen = () => {
                           )}
 
                           <Button
-                            variant="outline"
-                            className="w-full mt-2"
+                            className="w-full mt-2 bg-library-accent text-black hover:bg-library-accent-muted font-semibold"
                             onClick={() => navigate(`/session/${session.id}`)}
                           >
                             View Full Session
@@ -601,9 +616,11 @@ const LibraryScreen = () => {
               </div>
             ) : feedVideos.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full px-4">
-                <Play className="w-12 h-12 mb-3 text-white/40" />
-                <h3 className="font-medium mb-1 text-white">No videos yet</h3>
-                <p className="text-sm text-white/60 text-center">
+                <div className="w-16 h-16 rounded-full bg-library-surface border-2 border-library-accent flex items-center justify-center mb-4">
+                  <Play className="w-8 h-8 text-library-accent" />
+                </div>
+                <h3 className="font-semibold text-library-text mb-1">No videos yet</h3>
+                <p className="text-sm text-library-text-muted text-center">
                   Be the first to create and share a session!
                 </p>
               </div>
@@ -637,43 +654,43 @@ const LibraryScreen = () => {
 
                     <div className="absolute right-4 bottom-32 flex flex-col items-center gap-5">
                       <button className="flex flex-col items-center gap-1 touch-manipulation">
-                        <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                          <Heart className="w-6 h-6 text-white" />
+                        <div className="w-12 h-12 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/50 flex items-center justify-center">
+                          <Heart className="w-6 h-6 text-library-accent" />
                         </div>
-                        <span className="text-white text-xs">Like</span>
+                        <span className="text-library-accent text-xs font-medium">Like</span>
                       </button>
 
                       <button className="flex flex-col items-center gap-1 touch-manipulation">
-                        <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                          <MessageCircle className="w-6 h-6 text-white" />
+                        <div className="w-12 h-12 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/50 flex items-center justify-center">
+                          <MessageCircle className="w-6 h-6 text-library-accent" />
                         </div>
-                        <span className="text-white text-xs">Comment</span>
+                        <span className="text-library-accent text-xs font-medium">Comment</span>
                       </button>
 
                       <button 
                         onClick={() => handleFeedShare(video)}
                         className="flex flex-col items-center gap-1 touch-manipulation"
                       >
-                        <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                          <Share2 className="w-6 h-6 text-white" />
+                        <div className="w-12 h-12 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/50 flex items-center justify-center">
+                          <Share2 className="w-6 h-6 text-library-accent" />
                         </div>
-                        <span className="text-white text-xs">Share</span>
+                        <span className="text-library-accent text-xs font-medium">Share</span>
                       </button>
 
                       <button 
                         onClick={toggleMute}
                         className="flex flex-col items-center gap-1 touch-manipulation"
                       >
-                        <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                          {muted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+                        <div className="w-10 h-10 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/50 flex items-center justify-center">
+                          {muted ? <VolumeX className="w-5 h-5 text-library-accent" /> : <Volume2 className="w-5 h-5 text-library-accent" />}
                         </div>
                       </button>
                     </div>
 
                     <div className="absolute left-4 right-20 bottom-24 safe-area-pb">
-                      <p className="text-white font-semibold text-lg mb-1">@{video.creator_name}</p>
-                      <p className="text-white/80 text-sm">{video.session_name}</p>
-                      <p className="text-white/60 text-xs mt-1">{video.duration}s • {new Date(video.uploaded_at).toLocaleDateString()}</p>
+                      <p className="text-library-accent font-bold text-lg mb-1">@{video.creator_name}</p>
+                      <p className="text-library-text text-sm">{video.session_name}</p>
+                      <p className="text-library-text-muted text-xs mt-1">{video.duration}s • {new Date(video.uploaded_at).toLocaleDateString()}</p>
                     </div>
                   </div>
                 ))}
@@ -685,7 +702,7 @@ const LibraryScreen = () => {
 
       {/* Video Player Modal */}
       <Dialog open={!!playingVideo} onOpenChange={() => setPlayingVideo(null)}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden">
+        <DialogContent className="max-w-lg p-0 overflow-hidden bg-library-surface border-library-border">
           {playingVideo && (
             <VideoPlayer video={playingVideo} />
           )}
