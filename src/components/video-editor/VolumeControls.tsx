@@ -20,12 +20,12 @@ const VolumeControls = ({
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-center gap-4">
         <Button
-          variant={!muted ? "default" : "outline"}
+          variant="outline"
           size="lg"
           onClick={() => onMutedChange(false)}
           className={cn(
-            "flex flex-col gap-1 h-auto py-3 px-6 touch-manipulation",
-            !muted && "ring-2 ring-primary ring-offset-2"
+            "flex flex-col gap-1 h-auto py-3 px-6 touch-manipulation border-neutral-700 text-neutral-400 hover:text-yellow-400 hover:border-yellow-500/50 hover:bg-yellow-500/10",
+            !muted && "bg-yellow-500/20 border-yellow-500 text-yellow-400"
           )}
         >
           <Volume2 className="w-6 h-6" />
@@ -33,12 +33,12 @@ const VolumeControls = ({
         </Button>
 
         <Button
-          variant={muted ? "default" : "outline"}
+          variant="outline"
           size="lg"
           onClick={() => onMutedChange(true)}
           className={cn(
-            "flex flex-col gap-1 h-auto py-3 px-6 touch-manipulation",
-            muted && "ring-2 ring-primary ring-offset-2"
+            "flex flex-col gap-1 h-auto py-3 px-6 touch-manipulation border-neutral-700 text-neutral-400 hover:text-yellow-400 hover:border-yellow-500/50 hover:bg-yellow-500/10",
+            muted && "bg-yellow-500/20 border-yellow-500 text-yellow-400"
           )}
         >
           <VolumeX className="w-6 h-6" />
@@ -49,8 +49,8 @@ const VolumeControls = ({
       {!muted && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Volume Level</span>
-            <span className="font-mono">{volume}%</span>
+            <span className="text-neutral-500">Volume Level</span>
+            <span className="font-mono text-yellow-400">{volume}%</span>
           </div>
           <Slider
             value={[volume]}
@@ -58,12 +58,12 @@ const VolumeControls = ({
             max={100}
             step={1}
             onValueChange={([v]) => onVolumeChange(v)}
-            className="w-full"
+            className="w-full [&_[data-slot=track]]:bg-neutral-700 [&_[data-slot=range]]:bg-yellow-400 [&_[data-slot=thumb]]:bg-yellow-400 [&_[data-slot=thumb]]:border-yellow-500"
           />
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground text-center">
+      <p className="text-xs text-neutral-500 text-center">
         {muted ? "Audio will be removed from the video" : "Adjust the audio level"}
       </p>
     </div>
