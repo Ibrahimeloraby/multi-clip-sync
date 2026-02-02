@@ -57,6 +57,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        library: {
+          DEFAULT: "hsl(var(--library-bg))",
+          surface: "hsl(var(--library-surface))",
+          "surface-hover": "hsl(var(--library-surface-hover))",
+          border: "hsl(var(--library-border))",
+          accent: "hsl(var(--library-accent))",
+          "accent-muted": "hsl(var(--library-accent-muted))",
+          text: "hsl(var(--library-text))",
+          "text-muted": "hsl(var(--library-text-muted))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

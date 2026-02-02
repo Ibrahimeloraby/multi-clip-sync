@@ -95,6 +95,16 @@ button, [role="button"] {
     --shadow-glow: 0 0 40px hsla(217, 91%, 60%, 0.15);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Yellow/Black Library theme */
+    --library-bg: 0 0% 0%;
+    --library-surface: 0 0% 8%;
+    --library-surface-hover: 0 0% 12%;
+    --library-border: 0 0% 18%;
+    --library-accent: 60 100% 50%;
+    --library-accent-muted: 60 100% 40%;
+    --library-text: 0 0% 100%;
+    --library-text-muted: 0 0% 70%;
   }
 
   .dark {
