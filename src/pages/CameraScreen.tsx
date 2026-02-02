@@ -691,6 +691,18 @@ const CameraScreen = () => {
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
 
+        {/* TimeCode watermark - faded logo for authenticity */}
+        {recording && (
+          <div className="absolute bottom-20 right-4 flex items-center gap-2 opacity-30 pointer-events-none safe-area-mr">
+            <img 
+              src="/pwa-192x192.png" 
+              alt="TimeCode" 
+              className="w-8 h-8"
+            />
+            <span className="text-white text-xs font-bold tracking-wider">TIMECODE</span>
+          </div>
+        )}
+
         {/* Loading overlay - with retry option after delay */}
         {!cameraReady && (
           <div className="absolute inset-0 bg-black flex flex-col items-center justify-center gap-4">
