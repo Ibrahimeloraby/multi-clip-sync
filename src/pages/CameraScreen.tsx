@@ -691,14 +691,9 @@ const CameraScreen = () => {
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
 
-        {/* TimeCode watermark - faded logo for authenticity */}
+        {/* TimeCode watermark - faded text for authenticity */}
         {recording && (
-          <div className="absolute bottom-20 right-4 flex items-center gap-2 opacity-30 pointer-events-none safe-area-mr">
-            <img 
-              src="/pwa-192x192.png" 
-              alt="TimeCode" 
-              className="w-8 h-8"
-            />
+          <div className="absolute bottom-20 right-4 opacity-30 pointer-events-none safe-area-mr">
             <span className="text-white text-xs font-bold tracking-wider">TIMECODE</span>
           </div>
         )}
