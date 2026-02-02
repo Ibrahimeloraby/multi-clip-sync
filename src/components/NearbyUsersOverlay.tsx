@@ -139,71 +139,57 @@ const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverl
         onClick={handleClose}
       />
       
-      {/* Floating card - bottom left, compact */}
-      <div className="absolute bottom-24 left-4 right-16 pointer-events-auto">
-        <div className="bg-black/80 backdrop-blur-xl border border-[#FFFF00]/50 rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
-          {/* Header */}
-          <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#FFFF00]/20">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-[#FFFF00] flex items-center justify-center">
-                <Radio className="w-3.5 h-3.5 text-black" />
+      {/* Minimal floating pill - top center */}
+      <div className="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-auto safe-area-mt">
+        <div className="bg-black/50 backdrop-blur-2xl border border-[#FFFF00]/30 rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-[#FFFF00]" />
+              <span className="text-white/70 text-xs">Scanning...</span>
+            </>
+          ) : nearbySessions.length === 0 ? (
+            <>
+              <MapPin className="w-4 h-4 text-[#FFFF00]/60" />
+              <span className="text-white/60 text-xs">No sessions nearby</span>
+            </>
+          ) : (
+            <>
+              <div className="w-5 h-5 rounded-full bg-[#FFFF00] flex items-center justify-center">
+                <Radio className="w-3 h-3 text-black" />
               </div>
-              <span className="text-white font-semibold text-sm">Nearby</span>
-            </div>
-            
-            <button
-              onClick={handleClose}
-              className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-            >
-              <X className="w-3.5 h-3.5 text-white/70" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="max-h-32 overflow-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-6 gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-[#FFFF00]" />
-                <span className="text-white/50 text-xs">Scanning...</span>
-              </div>
-            ) : nearbySessions.length === 0 ? (
-              <div className="flex items-center justify-center py-6 gap-2">
-                <MapPin className="w-4 h-4 text-[#FFFF00]/50" />
-                <span className="text-white/50 text-xs">No sessions nearby</span>
-              </div>
-            ) : (
-              <div className="p-2 space-y-1">
-                {nearbySessions.map((session) => (
-                  <button
-                    key={session.id}
-                    onClick={() => {
-                      onJoinSession?.(session.id, session.time_code, session.name);
-                      handleClose();
-                    }}
-                    className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-[#FFFF00]/5 hover:bg-[#FFFF00]/15 active:scale-[0.98] transition-all text-left group"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-[#FFFF00]/20 border border-[#FFFF00]/30 flex items-center justify-center shrink-0">
-                      {session.is_live ? (
-                        <Radio className="w-4 h-4 text-red-400" />
-                      ) : (
-                        <User className="w-4 h-4 text-[#FFFF00]" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white text-xs truncate">{session.name}</p>
-                      <p className="text-[10px] text-white/40">
-                        {session.participant_count} • {formatDistance(session.distance)}
-                      </p>
-                    </div>
-                    <span className="text-[#FFFF00] text-[10px] font-bold uppercase opacity-0 group-hover:opacity-100 transition-opacity">
-                      Join →
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              <span className="text-white text-xs font-medium">
+                {nearbySessions.length} session{nearbySessions.length !== 1 ? 's' : ''} nearby
+              </span>
+            </>
+          )}
+          
+          <button
+            onClick={handleClose}
+            className="ml-1 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20"
+          >
+            <X className="w-3 h-3 text-white/60" />
+          </button>
         </div>
+        
+        {/* Session list dropdown - only if sessions exist */}
+        {!loading && nearbySessions.length > 0 && (
+          <div className="mt-2 bg-black/50 backdrop-blur-2xl border border-[#FFFF00]/20 rounded-2xl overflow-hidden max-w-64 mx-auto">
+            {nearbySessions.slice(0, 3).map((session) => (
+              <button
+                key={session.id}
+                onClick={() => {
+                  onJoinSession?.(session.id, session.time_code, session.name);
+                  handleClose();
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[#FFFF00]/10 active:bg-[#FFFF00]/20 transition-colors text-left border-b border-white/5 last:border-0"
+              >
+                <User className="w-4 h-4 text-[#FFFF00]/70 shrink-0" />
+                <span className="text-white text-xs truncate flex-1">{session.name}</span>
+                <span className="text-[#FFFF00]/70 text-[10px]">{formatDistance(session.distance)}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
