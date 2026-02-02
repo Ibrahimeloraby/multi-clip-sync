@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Users, Volume2, VolumeX, Maximize2, Minimize2, MapPin, Navigation } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebRTC } from "@/hooks/useWebRTC";
 
@@ -216,15 +215,14 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
           </>
         )}
 
-        {/* Close button */}
-        <Button
-          variant="ghost"
-          size="icon"
+        {/* Close button - larger touch target for mobile */}
+        <button
           onClick={onClose}
-          className="absolute top-4 right-4 rounded-full bg-black/60 backdrop-blur-sm text-library-accent hover:bg-black/80 safe-area-mt"
+          className="absolute top-4 right-4 w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-black/60 backdrop-blur-sm border border-library-accent/30 flex items-center justify-center active:bg-black/80 touch-manipulation safe-area-mt"
+          aria-label="Close monitor"
         >
-          <X className="w-5 h-5" />
-        </Button>
+          <X className="w-6 h-6 text-library-accent" />
+        </button>
 
         {/* Participant count and location toggle */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 safe-area-mt">
