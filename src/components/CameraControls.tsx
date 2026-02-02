@@ -114,11 +114,11 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
   const hasZoom = capabilities.zoom && capabilities.zoom.max > 1;
   const hasTorch = capabilities.torch && facingMode === "environment";
 
-  // Yellow neon button style
-  const neonYellow = "w-11 h-11 rounded-full bg-[#FFFF00]/80 backdrop-blur-sm text-black hover:bg-[#FFFF00] shadow-lg shadow-[#FFFF00]/30";
+  // Yellow neon button style - larger touch targets for mobile (min 44px recommended, using 48px)
+  const neonYellow = "w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-[#FFFF00]/90 backdrop-blur-sm text-black active:bg-[#FFFF00] active:scale-90 shadow-lg shadow-[#FFFF00]/30 transition-all touch-manipulation";
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       {/* Go Live Button */}
       {onGoLive && (
         <Button
@@ -144,7 +144,7 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
       )}
 
       {/* Divider */}
-      <div className="w-6 h-px bg-[#FFFF00]/40 mx-auto my-1" />
+      <div className="w-8 h-px bg-[#FFFF00]/40 mx-auto my-0.5" />
 
       {/* Camera Switch */}
       <Button
@@ -171,11 +171,11 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
         </Button>
       )}
 
-      {/* Zoom Control */}
+      {/* Zoom Control - better touch area */}
       {hasZoom && (
-        <div className="flex flex-col items-center gap-2 bg-[#FFFF00]/80 backdrop-blur-sm rounded-full py-3 px-2 shadow-lg shadow-[#FFFF00]/30">
-          <ZoomIn className="w-4 h-4 text-black/70" />
-          <div className="h-20 w-8 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2 bg-[#FFFF00]/90 backdrop-blur-sm rounded-full py-3 px-3 shadow-lg shadow-[#FFFF00]/30 touch-manipulation">
+          <ZoomIn className="w-5 h-5 text-black/80" />
+          <div className="h-24 w-10 flex items-center justify-center">
             <Slider
               value={[currentZoom]}
               min={capabilities.zoom!.min}
@@ -183,16 +183,16 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
               step={capabilities.zoom!.step}
               onValueChange={handleZoomChange}
               orientation="vertical"
-              className="h-full"
+              className="h-full touch-manipulation"
             />
           </div>
-          <ZoomOut className="w-4 h-4 text-black/70" />
-          <span className="text-[10px] text-black/70 font-medium">{currentZoom.toFixed(1)}x</span>
+          <ZoomOut className="w-5 h-5 text-black/80" />
+          <span className="text-xs text-black/80 font-semibold">{currentZoom.toFixed(1)}x</span>
         </div>
       )}
 
       {/* Divider */}
-      <div className="w-6 h-px bg-[#FFFF00]/40 mx-auto my-1" />
+      <div className="w-8 h-px bg-[#FFFF00]/40 mx-auto my-0.5" />
 
       {/* Videos Button */}
       <Button
