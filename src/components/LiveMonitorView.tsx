@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Users, Volume2, VolumeX, Maximize2, Minimize2 } from "lucide-react";
+import { X, Users, Volume2, VolumeX, Maximize2, Minimize2, MapPin, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebRTC } from "@/hooks/useWebRTC";
@@ -16,10 +16,21 @@ interface Participant {
   username: string;
 }
 
+interface ParticipantLocation {
+  userId: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  timestamp: number;
+}
+
 const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonitorViewProps) => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [focusedPeer, setFocusedPeer] = useState<string | null>(null);
   const [mutedPeers, setMutedPeers] = useState<Set<string>>(new Set());
+  const [showLocations, setShowLocations] = useState(false);
+  const [participantLocations, setParticipantLocations] = useState<Map<string, ParticipantLocation>>(new Map());
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
   const { remoteStreams, isConnecting } = useWebRTC({
@@ -68,6 +79,61 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
     return () => { channel.unsubscribe(); };
   }, [sessionId, userId]);
 
+  // Real-time location tracking with Presence
+  useEffect(() => {
+    const presenceChannel = supabase.channel(`location-${sessionId}`);
+
+    // Track and share my location
+    const watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        setMyLocation({ lat: latitude, lng: longitude });
+        
+        // Share location via presence
+        await presenceChannel.track({
+          user_id: userId,
+          latitude,
+          longitude,
+          accuracy,
+          timestamp: Date.now(),
+        });
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+    );
+
+    // Listen for other participants' locations
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const locations = new Map<string, ParticipantLocation>();
+        
+        Object.values(state).forEach((presences: any) => {
+          presences.forEach((p: any) => {
+            if (p.user_id && p.latitude && p.longitude) {
+              locations.set(p.user_id, {
+                userId: p.user_id,
+                latitude: p.latitude,
+                longitude: p.longitude,
+                accuracy: p.accuracy || 0,
+                timestamp: p.timestamp || Date.now(),
+              });
+            }
+          });
+        });
+        
+        setParticipantLocations(locations);
+      })
+      .subscribe();
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+      presenceChannel.unsubscribe();
+    };
+  }, [sessionId, userId]);
+
   const toggleMute = (peerId: string) => {
     setMutedPeers((prev) => {
       const next = new Set(prev);
@@ -78,6 +144,24 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
 
   const toggleFocus = (peerId: string) => {
     setFocusedPeer((prev) => (prev === peerId ? null : peerId));
+  };
+
+  // Calculate distance between two points (Haversine formula)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const formatDistance = (meters: number): string => {
+    if (meters < 1000) return `${Math.round(meters)}m`;
+    return `${(meters / 1000).toFixed(1)}km`;
   };
 
   const streamEntries = Array.from(remoteStreams.entries());
@@ -95,6 +179,20 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
               <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               {participants.find((p) => p.id === focusedPeer)?.username || "Participant"}
             </div>
+            
+            {/* Show distance to focused participant */}
+            {myLocation && participantLocations.has(focusedPeer) && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs safe-area-mt">
+                <Navigation className="w-3.5 h-3.5 text-library-accent" />
+                {formatDistance(calculateDistance(
+                  myLocation.lat,
+                  myLocation.lng,
+                  participantLocations.get(focusedPeer)!.latitude,
+                  participantLocations.get(focusedPeer)!.longitude
+                ))} away
+              </div>
+            )}
+            
             <button
               onClick={() => setFocusedPeer(null)}
               className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-library-accent/30 flex items-center justify-center safe-area-mt"
@@ -128,11 +226,72 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
           <X className="w-5 h-5" />
         </Button>
 
-        {/* Participant count badge */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm text-library-text px-3 py-1.5 rounded-full text-xs safe-area-mt">
-          <Users className="w-4 h-4 text-library-accent" />
-          <span>{streamEntries.length} live</span>
+        {/* Participant count and location toggle */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 safe-area-mt">
+          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm text-library-text px-3 py-1.5 rounded-full text-xs">
+            <Users className="w-4 h-4 text-library-accent" />
+            <span>{streamEntries.length} live</span>
+          </div>
+          
+          {/* Location toggle button */}
+          <button
+            onClick={() => setShowLocations(!showLocations)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors ${
+              showLocations 
+                ? 'bg-library-accent text-black' 
+                : 'bg-black/60 backdrop-blur-sm text-library-text'
+            }`}
+          >
+            <MapPin className="w-4 h-4" />
+            <span>Locations</span>
+          </button>
         </div>
+
+        {/* Location panel overlay */}
+        {showLocations && (
+          <div className="absolute bottom-20 left-4 right-4 bg-black/80 backdrop-blur-md rounded-xl p-3 max-h-[40%] overflow-auto">
+            <h3 className="text-xs font-bold text-library-accent mb-2 flex items-center gap-1.5">
+              <MapPin className="w-4 h-4" />
+              Participant Locations
+            </h3>
+            
+            {participantLocations.size === 0 ? (
+              <p className="text-xs text-library-text-muted py-2">
+                Waiting for location data...
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {Array.from(participantLocations.entries()).map(([oderId, location]) => {
+                  if (userId === location.userId) return null; // Skip self
+                  const participant = participants.find(p => p.id === location.userId);
+                  const distance = myLocation 
+                    ? calculateDistance(myLocation.lat, myLocation.lng, location.latitude, location.longitude)
+                    : null;
+                  
+                  return (
+                    <div 
+                      key={location.userId}
+                      className="flex items-center justify-between p-2 bg-white/10 rounded-lg"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-sm text-white font-medium">
+                          {participant?.username || "Unknown"}
+                        </span>
+                      </div>
+                      {distance !== null && (
+                        <div className="flex items-center gap-1 text-xs text-library-accent">
+                          <Navigation className="w-3 h-3" />
+                          {formatDistance(distance)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bottom panel - Participant tiles */}
@@ -185,6 +344,15 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
               {streamEntries.map(([peerId, stream]) => {
                 const participant = participants.find((p) => p.id === peerId);
                 const isFocused = focusedPeer === peerId;
+                const hasLocation = participantLocations.has(peerId);
+                const distance = hasLocation && myLocation
+                  ? calculateDistance(
+                      myLocation.lat,
+                      myLocation.lng,
+                      participantLocations.get(peerId)!.latitude,
+                      participantLocations.get(peerId)!.longitude
+                    )
+                  : null;
 
                 return (
                   <div
@@ -211,6 +379,14 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
 
                     {/* Live indicator */}
                     <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-destructive animate-pulse pointer-events-none z-20" />
+
+                    {/* Location indicator */}
+                    {hasLocation && (
+                      <div className="absolute top-0.5 left-0.5 flex items-center gap-0.5 bg-black/70 px-1 py-0.5 rounded text-[8px] text-library-accent pointer-events-none z-20">
+                        <MapPin className="w-2 h-2" />
+                        {distance !== null && formatDistance(distance)}
+                      </div>
+                    )}
 
                     {/* Username */}
                     <div className="absolute bottom-0.5 left-0.5 bg-black/70 px-1 py-0.5 rounded text-[8px] text-library-accent font-medium truncate max-w-[70px] pointer-events-none z-20">

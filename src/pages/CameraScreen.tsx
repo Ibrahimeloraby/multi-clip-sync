@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
 import { JoinSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
-import ParticipantLocationsOverlay from "@/components/ParticipantLocationsOverlay";
+import LiveMonitorView from "@/components/LiveMonitorView";
 import NearbyUsersOverlay from "@/components/NearbyUsersOverlay";
 import {
   Sheet,
@@ -35,7 +35,7 @@ const CameraScreen = () => {
   // Discovery and nearby sessions state
   // Overlay states
   const [showNearbyUsers, setShowNearbyUsers] = useState(false);
-  const [showParticipants, setShowParticipants] = useState(false);
+  const [showLiveMonitor, setShowLiveMonitor] = useState(false);
   const [showNearbySessions, setShowNearbySessions] = useState(false);
   const [nearbySessions, setNearbySessions] = useState<Array<{ id: string; name: string; time_code: string; distance: number }>>([]);
   const [loadingNearby, setLoadingNearby] = useState(false);
@@ -775,9 +775,9 @@ const CameraScreen = () => {
               onShare={() => setTriggerShare(true)}
               onMonitor={currentSession ? () => {
                 if (isSessionOwner) {
-                  setShowParticipants(true);
+                  setShowLiveMonitor(true);
                 } else {
-                  toast.info("Only the session owner can view participants");
+                  toast.info("Only the session owner can monitor participants");
                 }
               } : undefined}
             />
@@ -878,12 +878,13 @@ const CameraScreen = () => {
         />
       )}
 
-      {/* Participant Locations Overlay - for Eye/Monitor button */}
-      {showParticipants && currentSession && currentUserId && (
-        <ParticipantLocationsOverlay
+      {/* Live Monitor View - Owner only with video feeds and locations */}
+      {showLiveMonitor && currentSession && currentUserId && (
+        <LiveMonitorView
           sessionId={currentSession.id}
           userId={currentUserId}
-          onClose={() => setShowParticipants(false)}
+          localStream={stream}
+          onClose={() => setShowLiveMonitor(false)}
         />
       )}
 
