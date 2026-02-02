@@ -154,17 +154,19 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
               {focusedPeer && localStream && (
                 <button
                   onClick={() => setFocusedPeer(null)}
-                  className="relative w-20 h-14 rounded-lg overflow-hidden border-2 border-library-accent shrink-0"
+                  className="relative w-20 h-14 rounded-lg overflow-hidden border-2 border-library-accent shrink-0 touch-manipulation active:scale-95 transition-transform"
                 >
                   <video
                     autoPlay
                     playsInline
                     muted
                     ref={(el) => { if (el) el.srcObject = localStream; }}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover pointer-events-none"
                   />
-                  <div className="absolute bottom-0.5 left-0.5 bg-library-accent text-black px-1 py-0.5 rounded text-[8px] font-bold">
-                    YOU
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-library-accent text-black px-2 py-0.5 rounded text-[10px] font-bold">
+                      YOU
+                    </div>
                   </div>
                 </button>
               )}
