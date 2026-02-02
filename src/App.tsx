@@ -2,10 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import CameraScreen from "./pages/CameraScreen";
-import VideosScreen from "./pages/VideosScreen";
-import FeedScreen from "./pages/FeedScreen";
+import LibraryScreen from "./pages/LibraryScreen";
 import SessionView from "./pages/SessionView";
 import QuickJoin from "./pages/QuickJoin";
 import Install from "./pages/Install";
@@ -20,10 +19,12 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Main 3-screen app */}
+          {/* Main 2-screen app */}
           <Route path="/" element={<CameraScreen />} />
-          <Route path="/videos" element={<VideosScreen />} />
-          <Route path="/feed" element={<FeedScreen />} />
+          <Route path="/videos" element={<LibraryScreen />} />
+          
+          {/* Redirect old routes */}
+          <Route path="/feed" element={<Navigate to="/videos?tab=feed" replace />} />
           
           {/* Session routes */}
           <Route path="/session/:id" element={<SessionView />} />

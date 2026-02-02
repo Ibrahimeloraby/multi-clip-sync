@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera, Film, Play, Radio, Globe, Share2 } from "lucide-react";
+import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera, Film, Radio, Globe, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -194,7 +194,7 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
       {/* Divider */}
       <div className="w-8 h-px bg-[#FFFF00]/40 mx-auto my-0.5" />
 
-      {/* Videos Button */}
+      {/* Videos/Feed Button - Combined */}
       <Button
         variant="ghost"
         size="icon"
@@ -202,16 +202,6 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
         className={neonYellow}
       >
         <Film className="w-5 h-5" />
-      </Button>
-
-      {/* Feed Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => navigate('/feed')}
-        className={neonYellow}
-      >
-        <Play className="w-5 h-5 fill-black" />
       </Button>
 
       {/* Share Button */}
