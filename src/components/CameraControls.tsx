@@ -143,17 +143,6 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
         </Button>
       )}
 
-      {/* Nearby Sessions (Globe) */}
-      {onShowNearby && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onShowNearby}
-          className={neonYellow}
-        >
-          <Globe className="w-5 h-5" />
-        </Button>
-      )}
 
       {/* Divider */}
       <div className="w-8 h-px bg-[#FFFF00]/40 mx-auto my-0.5" />
