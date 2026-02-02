@@ -53,6 +53,8 @@ const CameraScreen = () => {
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isSwitchingCameraRef = useRef(false); // Flag to prevent upload during camera switch
+  const recordingSessionRef = useRef<{ id: string; name: string; timeCode: string } | null>(null); // Keep session for seamless switch
 
   // Handle join params from QuickJoin redirect
   useEffect(() => {
@@ -117,10 +119,40 @@ const CameraScreen = () => {
     initAuth();
   }, []);
 
-  // Initialize camera on mount
+  // Initialize camera on mount and when facing mode changes
   useEffect(() => {
-    startCamera();
-    return () => stopCamera();
+    const switchCamera = async () => {
+      // If switching during recording, handle seamlessly
+      if (isSwitchingCameraRef.current && recording) {
+        // Stop current recorder without triggering upload
+        if (mediaRecorderRef.current?.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+        
+        // Wait a moment for cleanup
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      await startCamera();
+      
+      // Resume recording with new stream after camera switch
+      if (isSwitchingCameraRef.current && recording && recordingSessionRef.current) {
+        // Wait for camera to be ready
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        if (stream) {
+          startRecordingWithSession(recordingSessionRef.current);
+        }
+        isSwitchingCameraRef.current = false;
+      }
+    };
+    
+    switchCamera();
+    return () => {
+      if (!isSwitchingCameraRef.current) {
+        stopCamera();
+      }
+    };
   }, [facingMode]);
 
   // Recording timer
@@ -233,10 +265,9 @@ const CameraScreen = () => {
   };
 
   const handleFacingModeChange = (mode: "user" | "environment") => {
-    // Prevent camera switch while recording - it would stop the recording
+    // Set flag to indicate we're switching cameras (not stopping recording)
     if (recording) {
-      toast.info("Stop recording first to switch camera");
-      return;
+      isSwitchingCameraRef.current = true;
     }
     setFacingMode(mode);
   };
@@ -306,6 +337,9 @@ const CameraScreen = () => {
 
   const startRecordingWithSession = (session: { id: string; name: string; timeCode: string }) => {
     try {
+      // Save session reference for camera switch resume
+      recordingSessionRef.current = session;
+      
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
         ? 'video/webm;codecs=vp8,opus'
         : MediaRecorder.isTypeSupported('video/webm')
@@ -314,7 +348,11 @@ const CameraScreen = () => {
 
       const mediaRecorder = new MediaRecorder(stream!, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
+      
+      // Don't clear chunks if we're resuming after camera switch
+      if (!isSwitchingCameraRef.current) {
+        chunksRef.current = [];
+      }
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -324,9 +362,18 @@ const CameraScreen = () => {
       const capturedSession = session;
       
       mediaRecorder.onstop = async () => {
+        // If we're switching cameras, don't upload - just collect chunks
+        if (isSwitchingCameraRef.current) {
+          console.log("Camera switch in progress, preserving chunks...");
+          return;
+        }
+        
         console.log("Recording stopped, processing blob...");
         const blob = new Blob(chunksRef.current, { type: mimeType });
         console.log("Blob created, size:", blob.size, "type:", mimeType);
+        
+        // Clear session reference
+        recordingSessionRef.current = null;
         
         if (blob.size > 1000) {
           console.log("Starting upload for session:", capturedSession.id);
