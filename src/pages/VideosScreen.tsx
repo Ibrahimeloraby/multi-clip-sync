@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Film, Crown, Play, Download, Trash2, Loader2, ChevronRight, Users, Clock
+  Film, Crown, Play, Download, Trash2, Loader2, ChevronRight, Clock, Scissors
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
+import VideoTrimmer from "@/components/VideoTrimmer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 
 interface Session {
@@ -102,6 +105,9 @@ const VideosScreen = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
+  const [editingVideo, setEditingVideo] = useState<VideoItem | null>(null);
+  const [editingBlob, setEditingBlob] = useState<Blob | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState(false);
   const [videoCounts, setVideoCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -240,6 +246,103 @@ const VideosScreen = () => {
     }
   };
 
+  const startEditingVideo = async (video: VideoItem) => {
+    setLoadingEdit(true);
+    setEditingVideo(video);
+    
+    try {
+      const { data } = await supabase.storage
+        .from('videos')
+        .download(video.storage_path);
+      
+      if (data) {
+        setEditingBlob(data);
+      } else {
+        toast.error("Failed to load video for editing");
+        setEditingVideo(null);
+      }
+    } catch (error) {
+      console.error("Failed to load video:", error);
+      toast.error("Failed to load video");
+      setEditingVideo(null);
+    } finally {
+      setLoadingEdit(false);
+    }
+  };
+
+  const handleTrimComplete = async (trimmedBlob: Blob) => {
+    if (!editingVideo) return;
+    
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.user) throw new Error("Not authenticated");
+
+      // Upload the trimmed video as a new file
+      const newPath = `${authSession.user.id}/${editingVideo.session_id}/${Date.now()}-edited.webm`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('videos')
+        .upload(newPath, trimmedBlob);
+
+      if (uploadError) throw uploadError;
+
+      // Get video duration
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      const duration = await new Promise<number>((resolve) => {
+        video.onloadedmetadata = () => {
+          if (video.duration === Infinity || isNaN(video.duration)) {
+            resolve(Math.max(1, editingVideo.duration));
+          } else {
+            resolve(Math.max(1, Math.floor(video.duration)));
+          }
+        };
+        video.onerror = () => resolve(editingVideo.duration);
+        video.src = URL.createObjectURL(trimmedBlob);
+      });
+
+      // Get public URL for thumbnail
+      const { data: { publicUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(newPath);
+
+      // Create new video record
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('device_id')
+        .eq('id', authSession.user.id)
+        .single();
+
+      await supabase.from('videos').insert({
+        session_id: editingVideo.session_id,
+        user_id: authSession.user.id,
+        device_id: profile?.device_id || 'unknown',
+        storage_path: newPath,
+        thumbnail_url: publicUrl,
+        duration: duration,
+      });
+
+      toast.success("Edited clip saved!");
+      
+      // Refresh the video list
+      const session = sessions.find(s => s.id === editingVideo.session_id);
+      if (session) {
+        fetchSessionVideos(session.id, session.owner_id === userId);
+      }
+      
+      setEditingVideo(null);
+      setEditingBlob(null);
+    } catch (error: any) {
+      console.error("Save error:", error);
+      toast.error(error.message || "Failed to save edited clip");
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingVideo(null);
+    setEditingBlob(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-20">
@@ -355,6 +458,18 @@ const VideosScreen = () => {
 
                           {/* Actions */}
                           <div className="flex items-center gap-1">
+                            {/* Edit button - only for session owners */}
+                            {isOwner && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-primary" 
+                                onClick={() => startEditingVideo(video)}
+                                disabled={loadingEdit}
+                              >
+                                <Scissors className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadVideo(video)}>
                               <Download className="w-4 h-4" />
                             </Button>
@@ -404,6 +519,30 @@ const VideosScreen = () => {
           {playingVideo && (
             <VideoPlayer video={playingVideo} />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Editor Modal */}
+      <Dialog open={!!editingVideo} onOpenChange={(open) => !open && cancelEditing()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scissors className="w-5 h-5" />
+              Edit Clip
+            </DialogTitle>
+          </DialogHeader>
+          {loadingEdit ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading video...</span>
+            </div>
+          ) : editingBlob ? (
+            <VideoTrimmer
+              videoBlob={editingBlob}
+              onTrimComplete={handleTrimComplete}
+              onCancel={cancelEditing}
+            />
+          ) : null}
         </DialogContent>
       </Dialog>
 
