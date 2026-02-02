@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
 import { JoinSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
-import LiveStreamView from "@/components/LiveStreamView";
+import SessionDiscoveryView from "@/components/SessionDiscoveryView";
 import LiveMonitorView from "@/components/LiveMonitorView";
 import {
   Sheet,
@@ -32,8 +32,8 @@ const CameraScreen = () => {
   const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string; ownerId?: string } | null>(null);
   
   
-  // Live stream and nearby sessions state
-  const [showLiveStream, setShowLiveStream] = useState(false);
+  // Discovery and nearby sessions state
+  const [showDiscovery, setShowDiscovery] = useState(false);
   const [showLiveMonitor, setShowLiveMonitor] = useState(false);
   const [showNearbySessions, setShowNearbySessions] = useState(false);
   const [nearbySessions, setNearbySessions] = useState<Array<{ id: string; name: string; time_code: string; distance: number }>>([]);
@@ -632,11 +632,8 @@ const CameraScreen = () => {
   };
 
   const handleGoLive = () => {
-    if (!currentSession) {
-      toast.error("Create a session first (tap +)");
-      return;
-    }
-    setShowLiveStream(true);
+    // Open discovery view to see participants and nearby sessions
+    setShowDiscovery(true);
   };
 
   const handleJoinNearbySession = async (sessionId: string, timeCode: string, sessionName: string) => {
@@ -772,7 +769,7 @@ const CameraScreen = () => {
               stream={stream}
               facingMode={facingMode}
               onFacingModeChange={handleFacingModeChange}
-              onGoLive={isSessionOwner ? handleGoLive : undefined}
+              onGoLive={handleGoLive}
               onShowNearby={handleShowNearby}
               onShare={() => setTriggerShare(true)}
               onMonitor={currentSession ? () => {
@@ -872,11 +869,13 @@ const CameraScreen = () => {
       />
 
       {/* Live Stream View */}
-      {showLiveStream && currentSession && currentUserId && (
-        <LiveStreamView
-          sessionId={currentSession.id}
+      {/* Session Discovery View - participants and nearby sessions */}
+      {showDiscovery && currentUserId && (
+        <SessionDiscoveryView
+          sessionId={currentSession?.id}
           userId={currentUserId}
-          onClose={() => setShowLiveStream(false)}
+          onClose={() => setShowDiscovery(false)}
+          onJoinSession={handleJoinNearbySession}
         />
       )}
 
