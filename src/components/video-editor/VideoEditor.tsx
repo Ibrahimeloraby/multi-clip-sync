@@ -220,23 +220,33 @@ const VideoEditor = ({ videoBlob, maxDuration, onComplete, onCancel }: VideoEdit
   ];
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-black">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-border">
-        <Button variant="ghost" size="sm" onClick={onCancel} className="gap-1">
+      <div className="flex items-center justify-between px-4 py-3 bg-black border-b border-yellow-500/30">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onCancel} 
+          className="gap-1 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"
+        >
           <X className="w-4 h-4" />
           Cancel
         </Button>
-        <span className="text-sm font-medium">Edit Video</span>
-        <Button variant="ghost" size="sm" onClick={resetAll} className="gap-1">
+        <span className="text-sm font-semibold text-yellow-400">Edit Video</span>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={resetAll} 
+          className="gap-1 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"
+        >
           <Undo2 className="w-4 h-4" />
           Reset
         </Button>
       </div>
 
       {/* Video Preview */}
-      <div className="flex-1 flex items-center justify-center bg-black/95 min-h-0 overflow-hidden p-2">
-        <div className="relative w-full h-full flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center bg-black min-h-0 overflow-hidden">
+        <div className="relative w-full h-full flex items-center justify-center p-2">
           <video
             ref={videoRef}
             src={videoUrl}
@@ -253,9 +263,9 @@ const VideoEditor = ({ videoBlob, maxDuration, onComplete, onCancel }: VideoEdit
           {!isPlaying && (
             <button
               onClick={togglePlay}
-              className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors"
+              className="absolute inset-0 flex items-center justify-center"
             >
-              <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg shadow-yellow-500/30">
                 <Play className="w-8 h-8 text-black ml-1" />
               </div>
             </button>
@@ -264,8 +274,8 @@ const VideoEditor = ({ videoBlob, maxDuration, onComplete, onCancel }: VideoEdit
       </div>
 
       {/* Timeline Scrubber */}
-      <div className="px-4 py-2 bg-muted/30">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+      <div className="px-4 py-3 bg-neutral-900 border-t border-yellow-500/20">
+        <div className="flex items-center gap-2 text-xs text-yellow-400/70 mb-2">
           <span className="font-mono">{formatTime(currentTime)}</span>
           <div className="flex-1" />
           <span className="font-mono">{formatTime(duration)}</span>
@@ -276,15 +286,16 @@ const VideoEditor = ({ videoBlob, maxDuration, onComplete, onCancel }: VideoEdit
           max={duration || 1}
           step={0.1}
           onValueChange={handleSeek}
-          className="w-full"
+          className="w-full [&_[data-slot=track]]:bg-neutral-700 [&_[data-slot=range]]:bg-yellow-400 [&_[data-slot=thumb]]:bg-yellow-400 [&_[data-slot=thumb]]:border-yellow-500"
         />
       </div>
 
       {/* Playback Controls */}
-      <div className="flex items-center justify-center gap-4 py-2">
+      <div className="flex items-center justify-center gap-6 py-3 bg-neutral-900">
         <Button
           variant="ghost"
           size="icon"
+          className="text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"
           onClick={() => {
             if (videoRef.current) {
               videoRef.current.currentTime = Math.max(0, currentTime - 5);
@@ -294,16 +305,16 @@ const VideoEditor = ({ videoBlob, maxDuration, onComplete, onCancel }: VideoEdit
           <RotateCcw className="w-5 h-5" />
         </Button>
         <Button
-          variant="default"
           size="icon"
-          className="w-12 h-12 rounded-full"
+          className="w-14 h-14 rounded-full bg-yellow-400 hover:bg-yellow-300 text-black"
           onClick={togglePlay}
         >
-          {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+          {isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-0.5" />}
         </Button>
         <Button
           variant="ghost"
           size="icon"
+          className="text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"
           onClick={() => {
             if (videoRef.current) {
               videoRef.current.currentTime = Math.min(duration, currentTime + 5);
@@ -315,7 +326,7 @@ const VideoEditor = ({ videoBlob, maxDuration, onComplete, onCancel }: VideoEdit
       </div>
 
       {/* Edit Mode Controls */}
-      <div className="border-t border-border bg-muted/20">
+      <div className="bg-neutral-900 border-t border-yellow-500/20">
         {activeMode === "trim" && (
           <TrimControls
             duration={duration}
@@ -366,7 +377,7 @@ const VideoEditor = ({ videoBlob, maxDuration, onComplete, onCancel }: VideoEdit
       </div>
 
       {/* Edit Mode Tabs */}
-      <div className="flex border-t border-border bg-background">
+      <div className="flex bg-neutral-950 border-t border-yellow-500/30">
         {editModes.map((mode) => (
           <button
             key={mode.id}
@@ -374,8 +385,8 @@ const VideoEditor = ({ videoBlob, maxDuration, onComplete, onCancel }: VideoEdit
             className={cn(
               "flex-1 flex flex-col items-center gap-1 py-3 px-2 transition-colors touch-manipulation",
               activeMode === mode.id
-                ? "text-primary bg-primary/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                ? "text-yellow-400 bg-yellow-500/15"
+                : "text-neutral-500 hover:text-yellow-400/70 hover:bg-yellow-500/5"
             )}
           >
             {mode.icon}
@@ -385,16 +396,16 @@ const VideoEditor = ({ videoBlob, maxDuration, onComplete, onCancel }: VideoEdit
       </div>
 
       {/* Save Button */}
-      <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-border">
+      <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-black border-t border-yellow-500/30">
         {isOverLimit && (
-          <p className="text-xs text-destructive text-center mb-2">
+          <p className="text-xs text-red-400 text-center mb-2">
             Trim to {maxDuration}s or less to save
           </p>
         )}
         <Button
           onClick={handleComplete}
           disabled={isOverLimit || isProcessing}
-          className="w-full h-12 text-base font-medium gap-2"
+          className="w-full h-12 text-base font-semibold gap-2 bg-yellow-400 hover:bg-yellow-300 text-black disabled:bg-neutral-700 disabled:text-neutral-400"
         >
           {isProcessing ? (
             <>Processing...</>

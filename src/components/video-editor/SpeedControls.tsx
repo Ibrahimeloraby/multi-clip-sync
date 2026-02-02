@@ -19,20 +19,20 @@ const SpeedControls = ({ speed, onSpeedChange }: SpeedControlsProps) => {
   return (
     <div className="p-4 space-y-4">
       <div className="text-center">
-        <p className="text-2xl font-bold">{speed}x</p>
-        <p className="text-xs text-muted-foreground">Playback Speed</p>
+        <p className="text-2xl font-bold text-yellow-400">{speed}x</p>
+        <p className="text-xs text-neutral-500">Playback Speed</p>
       </div>
 
       <div className="flex flex-wrap justify-center gap-2">
         {speedOptions.map((option) => (
           <Button
             key={option.value}
-            variant={speed === option.value ? "default" : "outline"}
+            variant="outline"
             size="sm"
             onClick={() => onSpeedChange(option.value)}
             className={cn(
-              "min-w-[60px] touch-manipulation",
-              speed === option.value && "ring-2 ring-primary ring-offset-2"
+              "min-w-[60px] touch-manipulation border-neutral-700 text-neutral-400 hover:text-yellow-400 hover:border-yellow-500/50 hover:bg-yellow-500/10",
+              speed === option.value && "bg-yellow-500/20 border-yellow-500 text-yellow-400 ring-1 ring-yellow-500/50"
             )}
           >
             {option.label}
@@ -40,7 +40,7 @@ const SpeedControls = ({ speed, onSpeedChange }: SpeedControlsProps) => {
         ))}
       </div>
 
-      <p className="text-xs text-muted-foreground text-center">
+      <p className="text-xs text-neutral-500 text-center">
         Slow motion or speed up your video
       </p>
     </div>

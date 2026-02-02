@@ -26,28 +26,28 @@ const RotateControls = ({
   return (
     <div className="p-4 space-y-4">
       <div className="text-center">
-        <p className="text-2xl font-bold">{rotation}°</p>
-        <p className="text-xs text-muted-foreground">Rotation</p>
+        <p className="text-2xl font-bold text-yellow-400">{rotation}°</p>
+        <p className="text-xs text-neutral-500">Rotation</p>
       </div>
 
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-3">
         <Button
           variant="outline"
           size="lg"
           onClick={rotate90}
-          className="flex flex-col gap-1 h-auto py-3 px-4 touch-manipulation"
+          className="flex flex-col gap-1 h-auto py-3 px-5 touch-manipulation border-neutral-700 text-neutral-400 hover:text-yellow-400 hover:border-yellow-500/50 hover:bg-yellow-500/10"
         >
           <RotateCw className="w-6 h-6" />
           <span className="text-xs">Rotate 90°</span>
         </Button>
 
         <Button
-          variant={flipH ? "default" : "outline"}
+          variant="outline"
           size="lg"
           onClick={() => onFlipHChange(!flipH)}
           className={cn(
-            "flex flex-col gap-1 h-auto py-3 px-4 touch-manipulation",
-            flipH && "ring-2 ring-primary ring-offset-2"
+            "flex flex-col gap-1 h-auto py-3 px-5 touch-manipulation border-neutral-700 text-neutral-400 hover:text-yellow-400 hover:border-yellow-500/50 hover:bg-yellow-500/10",
+            flipH && "bg-yellow-500/20 border-yellow-500 text-yellow-400"
           )}
         >
           <FlipHorizontal className="w-6 h-6" />
@@ -55,12 +55,12 @@ const RotateControls = ({
         </Button>
 
         <Button
-          variant={flipV ? "default" : "outline"}
+          variant="outline"
           size="lg"
           onClick={() => onFlipVChange(!flipV)}
           className={cn(
-            "flex flex-col gap-1 h-auto py-3 px-4 touch-manipulation",
-            flipV && "ring-2 ring-primary ring-offset-2"
+            "flex flex-col gap-1 h-auto py-3 px-5 touch-manipulation border-neutral-700 text-neutral-400 hover:text-yellow-400 hover:border-yellow-500/50 hover:bg-yellow-500/10",
+            flipV && "bg-yellow-500/20 border-yellow-500 text-yellow-400"
           )}
         >
           <FlipVertical className="w-6 h-6" />
@@ -68,7 +68,7 @@ const RotateControls = ({
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center">
+      <p className="text-xs text-neutral-500 text-center">
         Rotate or flip your video
       </p>
     </div>
