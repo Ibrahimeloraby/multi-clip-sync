@@ -43,6 +43,57 @@ interface VideoItem {
   session_id: string;
 }
 
+// Video player component that fetches actual video from storage
+const VideoPlayer = ({ video }: { video: VideoItem }) => {
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVideo = async () => {
+      try {
+        const { data } = await supabase.storage
+          .from('videos')
+          .download(video.storage_path);
+        
+        if (data) {
+          const url = URL.createObjectURL(data);
+          setVideoUrl(url);
+        }
+      } catch (error) {
+        console.error("Failed to load video:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideo();
+
+    return () => {
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+    };
+  }, [video.storage_path]);
+
+  if (loading) {
+    return (
+      <div className="w-full aspect-video bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      </div>
+    );
+  }
+
+  return (
+    <video
+      src={videoUrl || ''}
+      controls
+      autoPlay
+      playsInline
+      className="w-full aspect-video bg-black"
+    />
+  );
+};
+
 const VideosScreen = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -351,13 +402,7 @@ const VideosScreen = () => {
       <Dialog open={!!playingVideo} onOpenChange={() => setPlayingVideo(null)}>
         <DialogContent className="max-w-lg p-0 overflow-hidden">
           {playingVideo && (
-            <video
-              src={playingVideo.thumbnail_url || ''}
-              controls
-              autoPlay
-              playsInline
-              className="w-full aspect-video bg-black"
-            />
+            <VideoPlayer video={playingVideo} />
           )}
         </DialogContent>
       </Dialog>

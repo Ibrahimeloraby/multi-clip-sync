@@ -16,13 +16,76 @@ interface FeedVideo {
   creator_name: string;
 }
 
+// Video player component that fetches actual video from storage
+const FeedVideoPlayer = ({ 
+  video, 
+  isActive, 
+  muted, 
+  onClick 
+}: { 
+  video: FeedVideo; 
+  isActive: boolean; 
+  muted: boolean; 
+  onClick: () => void;
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchVideo = async () => {
+      try {
+        const { data } = await supabase.storage
+          .from('videos')
+          .download(video.storage_path);
+        
+        if (data) {
+          const url = URL.createObjectURL(data);
+          setVideoUrl(url);
+        }
+      } catch (error) {
+        console.error("Failed to load video:", error);
+      }
+    };
+
+    fetchVideo();
+
+    return () => {
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+    };
+  }, [video.storage_path]);
+
+  useEffect(() => {
+    if (!videoRef.current || !videoUrl) return;
+    
+    if (isActive) {
+      videoRef.current.play().catch(() => {});
+    } else {
+      videoRef.current.pause();
+    }
+  }, [isActive, videoUrl]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={videoUrl || ''}
+      loop
+      muted={muted}
+      playsInline
+      className="absolute inset-0 w-full h-full object-cover"
+      onClick={onClick}
+      poster={video.thumbnail_url || undefined}
+    />
+  );
+};
+
 const FeedScreen = () => {
   const [loading, setLoading] = useState(true);
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(true);
-  const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,6 +96,7 @@ const FeedScreen = () => {
     setLoading(true);
     try {
       // Fetch only published videos for the public feed
+      // Use separate queries to avoid FK relationship issues
       const { data: videosData, error } = await supabase
         .from('videos')
         .select(`
@@ -43,19 +107,29 @@ const FeedScreen = () => {
           uploaded_at,
           published_at,
           session_id,
-          sessions!inner (
-            name,
-            owner_id,
-            profiles:owner_id (
-              username
-            )
-          )
+          user_id
         `)
         .eq('published_to_feed', true)
         .order('published_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
+
+      // Fetch session names separately
+      const sessionIds = [...new Set((videosData || []).map(v => v.session_id))];
+      const userIds = [...new Set((videosData || []).map(v => v.user_id))];
+
+      const [sessionsResult, profilesResult] = await Promise.all([
+        sessionIds.length > 0 
+          ? supabase.from('sessions').select('id, name').in('id', sessionIds)
+          : { data: [] },
+        userIds.length > 0
+          ? supabase.from('profiles').select('id, username').in('id', userIds)
+          : { data: [] }
+      ]);
+
+      const sessionsMap = new Map((sessionsResult.data || []).map(s => [s.id, s.name]));
+      const profilesMap = new Map((profilesResult.data || []).map(p => [p.id, p.username]));
 
       const formattedVideos: FeedVideo[] = (videosData || []).map((v: any) => ({
         id: v.id,
@@ -64,8 +138,8 @@ const FeedScreen = () => {
         duration: v.duration,
         uploaded_at: v.uploaded_at,
         session_id: v.session_id,
-        session_name: v.sessions?.name || 'Unknown Session',
-        creator_name: v.sessions?.profiles?.username || 'Unknown Creator',
+        session_name: sessionsMap.get(v.session_id) || 'Unknown Session',
+        creator_name: profilesMap.get(v.user_id) || 'Unknown Creator',
       }));
 
       setVideos(formattedVideos);
@@ -95,19 +169,7 @@ const FeedScreen = () => {
     return () => container.removeEventListener('scroll', handleScroll);
   }, [currentIndex, videos.length]);
 
-  // Play/pause based on current index
-  useEffect(() => {
-    videos.forEach((video, index) => {
-      const videoEl = videoRefs.current.get(video.id);
-      if (!videoEl) return;
-
-      if (index === currentIndex && playing) {
-        videoEl.play().catch(() => {});
-      } else {
-        videoEl.pause();
-      }
-    });
-  }, [currentIndex, playing, videos]);
+  // No need for play/pause effect here - FeedVideoPlayer handles it internally
 
   const togglePlay = () => setPlaying(!playing);
   const toggleMute = () => setMuted(!muted);
@@ -167,16 +229,11 @@ const FeedScreen = () => {
             key={video.id}
             className="h-screen w-full snap-start snap-always relative flex items-center justify-center"
           >
-            {/* Video */}
-            <video
-              ref={(el) => {
-                if (el) videoRefs.current.set(video.id, el);
-              }}
-              src={video.thumbnail_url || ''}
-              loop
+            {/* Video - fetch actual video from storage */}
+            <FeedVideoPlayer 
+              video={video} 
+              isActive={index === currentIndex && playing}
               muted={muted}
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
               onClick={togglePlay}
             />
 
