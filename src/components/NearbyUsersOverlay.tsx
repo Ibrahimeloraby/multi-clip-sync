@@ -1,0 +1,214 @@
+import { useState, useEffect } from "react";
+import { X, Radio, MapPin, Loader2, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface NearbyUsersOverlayProps {
+  userId: string;
+  onClose: () => void;
+  onJoinSession?: (sessionId: string, timeCode: string, sessionName: string) => void;
+}
+
+interface NearbySession {
+  id: string;
+  name: string;
+  time_code: string;
+  distance: number;
+  is_live: boolean;
+  participant_count: number;
+}
+
+const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverlayProps) => {
+  const [nearbySessions, setNearbySessions] = useState<NearbySession[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getCurrentLocationAndFetch();
+  }, []);
+
+  const getCurrentLocationAndFetch = async () => {
+    setLoading(true);
+    
+    if (!navigator.geolocation) {
+      toast.error('Location not available');
+      setLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        await fetchNearbySessions(latitude, longitude);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        toast.error('Could not get location');
+        setLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const fetchNearbySessions = async (lat: number, lng: number) => {
+    try {
+      const { data: sessions } = await supabase
+        .from('sessions')
+        .select('id, name, time_code, latitude, longitude, is_live, is_active')
+        .eq('is_active', true)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null);
+
+      if (sessions) {
+        // Get participant counts
+        const sessionIds = sessions.map(s => s.id);
+        const { data: participants } = await supabase
+          .from('session_participants')
+          .select('session_id')
+          .in('session_id', sessionIds);
+
+        const countMap: Record<string, number> = {};
+        participants?.forEach(p => {
+          countMap[p.session_id] = (countMap[p.session_id] || 0) + 1;
+        });
+
+        const withDistance = sessions
+          .map(s => ({
+            id: s.id,
+            name: s.name,
+            time_code: s.time_code,
+            is_live: s.is_live,
+            distance: calculateDistance(lat, lng, s.latitude!, s.longitude!),
+            participant_count: countMap[s.id] || 0,
+          }))
+          .filter(s => s.distance <= 10) // Within 10km
+          .sort((a, b) => a.distance - b.distance);
+
+        setNearbySessions(withDistance);
+      }
+    } catch (error) {
+      console.error('Failed to fetch nearby:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const formatDistance = (km: number): string => {
+    if (km < 1) return `${Math.round(km * 1000)}m`;
+    return `${km.toFixed(1)}km`;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col">
+      {/* Main view */}
+      <div className="flex-1 relative bg-black/90">
+        {/* Header */}
+        <div className="absolute top-4 left-4 right-4 flex items-center justify-between safe-area-mt">
+          <div className="flex items-center gap-2 bg-library-accent text-black px-3 py-1.5 rounded-full text-xs font-bold">
+            <Radio className="w-4 h-4" />
+            Nearby Sessions
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="rounded-full bg-black/60 backdrop-blur-sm text-library-accent hover:bg-black/80"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Centered content */}
+        <div className="absolute inset-0 flex items-center justify-center px-6">
+          {loading ? (
+            <div className="text-center">
+              <Loader2 className="w-10 h-10 animate-spin text-library-accent mx-auto mb-3" />
+              <p className="text-white/60 text-sm">Finding nearby TimeCode users...</p>
+            </div>
+          ) : nearbySessions.length === 0 ? (
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-library-accent/20 flex items-center justify-center mx-auto mb-3">
+                <MapPin className="w-8 h-8 text-library-accent" />
+              </div>
+              <h2 className="text-lg font-bold text-white mb-1">No Sessions Nearby</h2>
+              <p className="text-sm text-white/60">No active sessions within 10km</p>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-library-accent/20 flex items-center justify-center mx-auto mb-3">
+                <Radio className="w-8 h-8 text-library-accent" />
+              </div>
+              <h2 className="text-lg font-bold text-white mb-1">
+                {nearbySessions.length} Session{nearbySessions.length !== 1 ? 's' : ''} Nearby
+              </h2>
+              <p className="text-sm text-white/60">Tap to join</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom panel - Session list */}
+      <div className="bg-library-surface border-t border-library-border safe-area-pb max-h-[40vh] overflow-auto">
+        <div className="px-4 py-3 space-y-2">
+          {loading ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="w-5 h-5 animate-spin text-library-text-muted" />
+            </div>
+          ) : nearbySessions.length === 0 ? (
+            <div className="flex items-center justify-center py-6 text-center">
+              <span className="text-sm text-library-text-muted">Pull down to refresh</span>
+            </div>
+          ) : (
+            nearbySessions.map((session) => (
+              <button
+                key={session.id}
+                onClick={() => {
+                  onJoinSession?.(session.id, session.time_code, session.name);
+                  onClose();
+                }}
+                className="w-full flex items-center gap-3 p-3 bg-black/40 rounded-xl active:scale-[0.98] transition-transform text-left"
+              >
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-library-accent/20 flex items-center justify-center">
+                    {session.is_live ? (
+                      <Radio className="w-5 h-5 text-destructive" />
+                    ) : (
+                      <User className="w-5 h-5 text-library-accent" />
+                    )}
+                  </div>
+                  {session.is_live && (
+                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-destructive animate-pulse" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-white truncate">{session.name}</p>
+                  <p className="text-xs text-white/50">
+                    {session.participant_count} participant{session.participant_count !== 1 ? 's' : ''} • {formatDistance(session.distance)} away
+                  </p>
+                </div>
+                <div className="text-library-accent text-sm font-medium">
+                  Join
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default NearbyUsersOverlay;
