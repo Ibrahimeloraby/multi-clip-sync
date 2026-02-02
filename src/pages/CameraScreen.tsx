@@ -893,26 +893,16 @@ const CameraScreen = () => {
       {!uploading && (
         <div className="absolute bottom-0 left-0 right-0 pb-6 safe-area-pb">
           <div className="flex items-center justify-between px-6">
-            {/* Left - Create + Join buttons - larger touch targets */}
+            {/* Left - Create button */}
             <div className="flex flex-col items-center gap-1">
-              <div className="flex gap-3">
-                <button
-                  onClick={handleQuickCreateSession}
-                  disabled={!isAuthReady || !!currentSession}
-                  className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-black flex items-center justify-center active:scale-90 active:bg-black/80 transition-all touch-manipulation disabled:opacity-50"
-                  aria-label="Create new session"
-                >
-                  <Plus className="w-6 h-6 text-[#FFFF00]" strokeWidth={2.5} />
-                </button>
-                <button
-                  onClick={() => setShowJoinModal(true)}
-                  className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-black flex items-center justify-center active:scale-90 active:bg-black/80 transition-all touch-manipulation"
-                  disabled={!isAuthReady}
-                  aria-label="Join session"
-                >
-                  <Users className="w-6 h-6 text-[#FFFF00]" strokeWidth={2.5} />
-                </button>
-              </div>
+              <button
+                onClick={handleQuickCreateSession}
+                disabled={!isAuthReady || !!currentSession}
+                className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-black flex items-center justify-center active:scale-90 active:bg-black/80 transition-all touch-manipulation disabled:opacity-50"
+                aria-label="Create new session"
+              >
+                <Plus className="w-6 h-6 text-[#FFFF00]" strokeWidth={2.5} />
+              </button>
             </div>
 
             {/* Center - Record button - larger for easy tapping */}
