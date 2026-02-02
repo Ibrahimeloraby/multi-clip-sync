@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
 import VideoTrimmer from "@/components/VideoTrimmer";
-import { CreateSessionModal, JoinSessionModal } from "@/components/SessionModals";
+import { JoinSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
 import LiveStreamView from "@/components/LiveStreamView";
 import {
@@ -30,7 +30,7 @@ const CameraScreen = () => {
   
   // Session state - unified: once created, session is ready to share & record
   const [currentSession, setCurrentSession] = useState<{ id: string; name: string; timeCode: string; ownerId?: string } | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  
   
   // Live stream and nearby sessions state
   const [showLiveStream, setShowLiveStream] = useState(false);
@@ -394,8 +394,7 @@ const CameraScreen = () => {
         return;
       }
       if (!currentSession) {
-        toast.error("Create or join a session first");
-        setShowCreateModal(true);
+        toast.error("Create a session first (tap +)");
         return;
       }
       setRecordedBlob(file);
@@ -408,7 +407,72 @@ const CameraScreen = () => {
     const { data: { session: authSession } } = await supabase.auth.getSession();
     // Session is immediately active and shareable
     setCurrentSession({ id: sessionId, name: sessionName, timeCode, ownerId: authSession?.user?.id });
-    toast.success("Session created! Share with friends or start recording.");
+    toast.success("Session created!");
+  };
+
+  // Quick session creation without modal
+  const handleQuickCreateSession = async () => {
+    if (currentSession) {
+      toast.info("You already have an active session");
+      return;
+    }
+
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.user) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('device_id, username')
+        .eq('id', authSession.user.id)
+        .single();
+
+      // Generate a short, friendly session name
+      const adjectives = ['Epic', 'Cool', 'Fun', 'Live', 'Quick', 'Hot', 'Fresh', 'Wild'];
+      const nouns = ['Session', 'Take', 'Shoot', 'Clip', 'Moment', 'Scene'];
+      const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+      const sessionName = `${randomAdj} ${randomNoun}`;
+
+      // Generate short time code
+      const timeCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      const { data: newSession, error } = await supabase
+        .from('sessions')
+        .insert({
+          owner_id: authSession.user.id,
+          name: sessionName,
+          time_code: timeCode,
+          mode: 'global',
+          tier: 'free',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add owner as participant
+      await supabase.from('session_participants').insert({
+        session_id: newSession.id,
+        user_id: authSession.user.id,
+        device_id: profile?.device_id || 'unknown',
+      });
+
+      setCurrentSession({ 
+        id: newSession.id, 
+        name: sessionName, 
+        timeCode, 
+        ownerId: authSession.user.id 
+      });
+      
+      toast.success(`"${sessionName}" created!`);
+    } catch (error: any) {
+      console.error("Quick create session error:", error);
+      toast.error(error.message || "Failed to create session");
+    }
   };
 
   const handleRenameSession = async () => {
@@ -578,8 +642,7 @@ const CameraScreen = () => {
 
   const handleGoLive = () => {
     if (!currentSession) {
-      toast.error("Create or join a session first to go live");
-      setShowCreateModal(true);
+      toast.error("Create a session first (tap +)");
       return;
     }
     setShowLiveStream(true);
@@ -749,9 +812,9 @@ const CameraScreen = () => {
             <div className="flex flex-col items-center gap-1">
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-black flex items-center justify-center active:scale-90 active:bg-black/80 transition-all touch-manipulation"
-                  disabled={!isAuthReady}
+                  onClick={handleQuickCreateSession}
+                  disabled={!isAuthReady || !!currentSession}
+                  className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-black flex items-center justify-center active:scale-90 active:bg-black/80 transition-all touch-manipulation disabled:opacity-50"
                   aria-label="Create new session"
                 >
                   <Plus className="w-6 h-6 text-[#FFFF00]" strokeWidth={2.5} />
@@ -809,12 +872,7 @@ const CameraScreen = () => {
       />
 
 
-      {/* Modals */}
-      <CreateSessionModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        onSessionCreated={handleSessionCreated}
-      />
+      {/* Join Modal */}
       <JoinSessionModal
         open={showJoinModal}
         onOpenChange={setShowJoinModal}
