@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Loader2, RefreshCw, Plus, Users, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CameraControls from "@/components/CameraControls";
-import VideoTrimmer from "@/components/VideoTrimmer";
 import { JoinSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
 import LiveStreamView from "@/components/LiveStreamView";
@@ -24,8 +24,7 @@ const CameraScreen = () => {
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [showTrimmer, setShowTrimmer] = useState(false);
-  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const navigate = useNavigate();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
   
@@ -288,11 +287,12 @@ const CameraScreen = () => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         if (blob.size > 1000) {
-          setRecordedBlob(blob);
-          setShowTrimmer(true);
+          // Upload directly without trimmer and navigate to videos
+          await uploadVideo(blob);
+          navigate('/videos');
         } else {
           toast.error("Recording too short");
         }
@@ -311,18 +311,6 @@ const CameraScreen = () => {
       mediaRecorderRef.current.stop();
       setRecording(false);
     }
-  };
-
-  const handleTrimComplete = async (trimmedBlob: Blob) => {
-    setShowTrimmer(false);
-    setRecordedBlob(null);
-    await uploadVideo(trimmedBlob);
-  };
-
-  const handleTrimCancel = () => {
-    setShowTrimmer(false);
-    setRecordedBlob(null);
-    toast.info("Recording discarded");
   };
 
   const uploadVideo = async (blob: Blob) => {
@@ -388,7 +376,7 @@ const CameraScreen = () => {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('video/')) {
@@ -399,8 +387,9 @@ const CameraScreen = () => {
         toast.error("Create a session first (tap +)");
         return;
       }
-      setRecordedBlob(file);
-      setShowTrimmer(true);
+      // Upload directly and navigate to videos
+      await uploadVideo(file);
+      navigate('/videos');
     }
   };
 
@@ -703,7 +692,7 @@ const CameraScreen = () => {
         />
 
         {/* Loading overlay - with retry option after delay */}
-        {!cameraReady && !showTrimmer && (
+        {!cameraReady && (
           <div className="absolute inset-0 bg-black flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-8 h-8 text-white animate-spin" />
             <p className="text-white/70 text-sm">Starting camera...</p>
@@ -770,7 +759,7 @@ const CameraScreen = () => {
         )}
 
         {/* Camera controls (right side) - with safe area for notched devices */}
-        {cameraReady && !showTrimmer && (
+        {cameraReady && (
           <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 pr-[env(safe-area-inset-right)] transition-opacity ${recording ? 'opacity-40' : 'opacity-100'}`}>
             <CameraControls
               stream={stream}
@@ -790,18 +779,6 @@ const CameraScreen = () => {
           </div>
         )}
 
-        {/* Trimmer overlay */}
-        {showTrimmer && recordedBlob && (
-          <div className="absolute inset-0 bg-background/95 p-4 overflow-auto">
-            <h3 className="text-lg font-semibold mb-4 text-center">Trim Your Video</h3>
-            <VideoTrimmer
-              videoBlob={recordedBlob}
-              onTrimComplete={handleTrimComplete}
-              onCancel={handleTrimCancel}
-            />
-          </div>
-        )}
-
         {/* Upload indicator */}
         {uploading && (
           <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
@@ -814,7 +791,7 @@ const CameraScreen = () => {
       </div>
 
       {/* Bottom Controls - Floating on camera with proper safe area */}
-      {!showTrimmer && !uploading && (
+      {!uploading && (
         <div className="absolute bottom-0 left-0 right-0 pb-6 safe-area-pb">
           <div className="flex items-center justify-between px-6">
             {/* Left - Create + Join buttons - larger touch targets */}
