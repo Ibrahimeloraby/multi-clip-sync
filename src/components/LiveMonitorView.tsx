@@ -150,25 +150,32 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
             </div>
           ) : (
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {/* Owner's thumbnail when viewing a participant */}
+              {/* Owner's thumbnail - always show when focused on participant, tap to return to own view */}
               {focusedPeer && localStream && (
-                <button
-                  onClick={() => setFocusedPeer(null)}
-                  className="relative w-20 h-14 rounded-lg overflow-hidden border-2 border-library-accent shrink-0 touch-manipulation active:scale-95 transition-transform"
+                <div
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("YOU button clicked, clearing focusedPeer");
+                    setFocusedPeer(null);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  className="relative w-20 h-14 rounded-lg overflow-hidden border-2 border-library-accent shrink-0 touch-manipulation active:scale-95 transition-transform cursor-pointer select-none"
                 >
                   <video
                     autoPlay
                     playsInline
                     muted
-                    ref={(el) => { if (el) el.srcObject = localStream; }}
-                    className="w-full h-full object-cover pointer-events-none"
+                    ref={(el) => { if (el && localStream) el.srcObject = localStream; }}
+                    className="w-full h-full object-cover pointer-events-none select-none"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="bg-library-accent text-black px-2 py-0.5 rounded text-[10px] font-bold">
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none bg-black/20">
+                    <div className="bg-library-accent text-black px-2 py-0.5 rounded text-[10px] font-bold shadow-md">
                       YOU
                     </div>
                   </div>
-                </button>
+                </div>
               )}
 
               {/* Participant tiles */}
