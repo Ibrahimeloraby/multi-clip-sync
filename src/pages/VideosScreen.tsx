@@ -476,8 +476,8 @@ const VideosScreen = () => {
 
                           {/* Actions */}
                           <div className="flex items-center gap-1">
-                            {/* Edit button - only for session owners */}
-                            {isOwner && (
+                            {/* Edit button - owners can edit all, users can edit their own */}
+                            {(isOwner || video.user_id === userId) && (
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
@@ -501,25 +501,28 @@ const VideosScreen = () => {
                                 <Download className="w-4 h-4" />
                               )}
                             </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete video?</AlertDialogTitle>
-                                  <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteVideo(video.id, session.id)}>
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            {/* Delete button - users can only delete their own videos */}
+                            {video.user_id === userId && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete video?</AlertDialogTitle>
+                                    <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteVideo(video.id, session.id)}>
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                           </div>
                         </div>
                       ))
