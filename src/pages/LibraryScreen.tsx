@@ -25,6 +25,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { VideoEditor, VideoEditMetadata } from "@/components/video-editor";
+import SessionTimeline from "@/components/SessionTimeline";
 
 interface Session {
   id: string;
@@ -190,6 +191,7 @@ const LibraryScreen = () => {
   const [editingBlob, setEditingBlob] = useState<Blob | null>(null);
   const [loadingEdit, setLoadingEdit] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [timelineSession, setTimelineSession] = useState<{ id: string; name: string } | null>(null);
   
   // Feed tab state
   const [feedLoading, setFeedLoading] = useState(true);
@@ -715,9 +717,9 @@ const LibraryScreen = () => {
 
                           <Button
                             className="w-full mt-2 bg-library-accent text-black hover:bg-library-accent-muted font-semibold"
-                            onClick={() => navigate(`/session/${session.id}`)}
+                            onClick={() => setTimelineSession({ id: session.id, name: session.name })}
                           >
-                            View Full Session
+                            View Full Timeline
                           </Button>
                         </div>
                       )}
@@ -844,6 +846,19 @@ const LibraryScreen = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Session Timeline Modal */}
+      <Dialog open={!!timelineSession} onOpenChange={() => setTimelineSession(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-library border-library-border max-h-[90vh] overflow-y-auto">
+          {timelineSession && (
+            <SessionTimeline
+              sessionId={timelineSession.id}
+              sessionName={timelineSession.name}
+              onClose={() => setTimelineSession(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
