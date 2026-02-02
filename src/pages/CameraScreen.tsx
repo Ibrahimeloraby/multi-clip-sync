@@ -292,12 +292,27 @@ const CameraScreen = () => {
       const capturedSession = session;
       
       mediaRecorder.onstop = async () => {
+        console.log("Recording stopped, processing blob...");
         const blob = new Blob(chunksRef.current, { type: mimeType });
+        console.log("Blob created, size:", blob.size, "type:", mimeType);
+        
         if (blob.size > 1000) {
-          // Upload directly without trimmer and navigate to videos
-          await uploadVideoWithSession(blob, capturedSession);
-          navigate('/videos');
+          console.log("Starting upload for session:", capturedSession.id);
+          try {
+            // Upload and wait for completion before navigating
+            const success = await uploadVideoWithSession(blob, capturedSession);
+            if (success) {
+              console.log("Upload successful, navigating to videos");
+              navigate('/videos');
+            } else {
+              console.log("Upload returned false, staying on camera");
+            }
+          } catch (err) {
+            console.error("Upload failed in onstop:", err);
+            toast.error("Upload failed. Please try again.");
+          }
         } else {
+          console.log("Blob too small:", blob.size);
           toast.error("Recording too short");
         }
       };
@@ -317,51 +332,72 @@ const CameraScreen = () => {
     }
   };
 
-  const uploadVideoWithSession = async (blob: Blob, session: { id: string; name: string; timeCode: string }) => {
+  const uploadVideoWithSession = async (blob: Blob, session: { id: string; name: string; timeCode: string }): Promise<boolean> => {
     setUploading(true);
+    console.log("uploadVideoWithSession called for session:", session.id, "blob size:", blob.size);
+    
     try {
       const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (!authSession?.user) throw new Error("Not authenticated");
+      console.log("Auth session:", authSession?.user?.id ? "authenticated" : "NOT authenticated");
+      
+      if (!authSession?.user) {
+        toast.error("Not authenticated. Please refresh the app.");
+        return false;
+      }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('device_id')
         .eq('id', authSession.user.id)
         .single();
+      
+      console.log("Profile fetched:", profile?.device_id, "error:", profileError);
 
-      // Get video duration
+      // Get video duration with timeout
       const video = document.createElement('video');
       video.preload = 'metadata';
-      const duration = await new Promise<number>((resolve) => {
-        video.onloadedmetadata = () => {
-          if (video.duration === Infinity || isNaN(video.duration)) {
-            video.currentTime = Number.MAX_SAFE_INTEGER;
-            video.ontimeupdate = () => {
-              video.ontimeupdate = null;
+      const duration = await Promise.race([
+        new Promise<number>((resolve) => {
+          video.onloadedmetadata = () => {
+            if (video.duration === Infinity || isNaN(video.duration)) {
+              video.currentTime = Number.MAX_SAFE_INTEGER;
+              video.ontimeupdate = () => {
+                video.ontimeupdate = null;
+                resolve(Math.max(1, Math.floor(video.duration)));
+              };
+            } else {
               resolve(Math.max(1, Math.floor(video.duration)));
-            };
-          } else {
-            resolve(Math.max(1, Math.floor(video.duration)));
-          }
-        };
-        video.onerror = () => resolve(5);
-        video.src = URL.createObjectURL(blob);
-      });
+            }
+          };
+          video.onerror = () => resolve(5);
+          video.src = URL.createObjectURL(blob);
+        }),
+        // Fallback timeout after 5 seconds
+        new Promise<number>((resolve) => setTimeout(() => resolve(Math.ceil(blob.size / 100000)), 5000))
+      ]);
+      
+      console.log("Video duration calculated:", duration);
 
       const filePath = `${authSession.user.id}/${session.id}/${Date.now()}-recording.webm`;
-      
-      console.log("Uploading video to session:", session.id, "path:", filePath);
+      console.log("Uploading to storage path:", filePath);
       
       const { error: uploadError } = await supabase.storage
         .from('videos')
         .upload(filePath, blob);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        toast.error("Storage upload failed: " + uploadError.message);
+        return false;
+      }
+      
+      console.log("Storage upload successful");
 
       const { data: { publicUrl } } = supabase.storage
         .from('videos')
         .getPublicUrl(filePath);
 
+      console.log("Inserting video record into database...");
       const { error: dbError } = await supabase.from('videos').insert({
         session_id: session.id,
         user_id: authSession.user.id,
@@ -371,13 +407,19 @@ const CameraScreen = () => {
         duration: duration,
       });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database insert error:", dbError);
+        toast.error("Database error: " + dbError.message);
+        return false;
+      }
 
       console.log("Video uploaded successfully to session:", session.id);
       toast.success("Video uploaded!");
+      return true;
     } catch (error: any) {
       console.error("Upload error:", error);
       toast.error(error.message || "Upload failed");
+      return false;
     } finally {
       setUploading(false);
     }
