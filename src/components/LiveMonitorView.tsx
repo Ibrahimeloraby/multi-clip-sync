@@ -193,22 +193,39 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
                       isFocused ? "border-2 border-library-accent" : "border border-library-border"
                     }`}
                   >
-                    <button onClick={() => toggleFocus(peerId)} className="w-full h-full">
+                    {/* Video layer - no interaction */}
+                    <div className="absolute inset-0 pointer-events-none">
                       <VideoFeed stream={stream} muted={mutedPeers.has(peerId)} />
-                    </button>
+                    </div>
+
+                    {/* Invisible click layer for focus toggle */}
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        console.log("Participant clicked:", peerId);
+                        toggleFocus(peerId);
+                      }} 
+                      className="absolute inset-0 z-10 touch-manipulation"
+                      aria-label={`Focus on ${participant?.username || 'participant'}`}
+                    />
 
                     {/* Live indicator */}
-                    <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                    <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-destructive animate-pulse pointer-events-none z-20" />
 
                     {/* Username */}
-                    <div className="absolute bottom-0.5 left-0.5 bg-black/70 px-1 py-0.5 rounded text-[8px] text-library-accent font-medium truncate max-w-[70px]">
+                    <div className="absolute bottom-0.5 left-0.5 bg-black/70 px-1 py-0.5 rounded text-[8px] text-library-accent font-medium truncate max-w-[70px] pointer-events-none z-20">
                       {participant?.username?.slice(0, 8) || "User"}
                     </div>
 
                     {/* Mute toggle */}
                     <button
-                      onClick={(e) => { e.stopPropagation(); toggleMute(peerId); }}
-                      className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center"
+                      type="button"
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        console.log("Mute toggled for:", peerId);
+                        toggleMute(peerId); 
+                      }}
+                      className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center z-30 touch-manipulation"
                     >
                       {mutedPeers.has(peerId) ? (
                         <VolumeX className="w-3 h-3 text-library-text-muted" />
