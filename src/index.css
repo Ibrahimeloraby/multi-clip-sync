@@ -19,6 +19,28 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Prevent pull-to-refresh and overscroll on camera screen */
+.overscroll-none {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Better touch handling for buttons */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Disable text selection on interactive elements */
+button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 @tailwind components;
 @tailwind utilities;
 

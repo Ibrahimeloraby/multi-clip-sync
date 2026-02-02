@@ -687,9 +687,9 @@ const CameraScreen = () => {
           </div>
         )}
 
-        {/* Camera controls (right side) */}
+        {/* Camera controls (right side) - with safe area for notched devices */}
         {cameraReady && !recording && !showTrimmer && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 pr-[env(safe-area-inset-right)]">
             <CameraControls
               stream={stream}
               facingMode={facingMode}
@@ -724,47 +724,50 @@ const CameraScreen = () => {
         )}
       </div>
 
-      {/* Bottom Controls - Floating on camera */}
+      {/* Bottom Controls - Floating on camera with proper safe area */}
       {!showTrimmer && !uploading && (
-        <div className="absolute bottom-8 left-0 right-0 safe-area-pb">
-          <div className="flex items-center justify-between px-8">
-            {/* Left - Create + Join buttons */}
+        <div className="absolute bottom-0 left-0 right-0 pb-6 safe-area-pb">
+          <div className="flex items-center justify-between px-6">
+            {/* Left - Create + Join buttons - larger touch targets */}
             <div className="flex flex-col items-center gap-1">
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="w-12 h-12 rounded-full bg-black flex items-center justify-center active:scale-95 transition-transform"
+                  className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-black flex items-center justify-center active:scale-90 active:bg-black/80 transition-all touch-manipulation"
                   disabled={!isAuthReady}
+                  aria-label="Create new session"
                 >
-                  <Plus className="w-5 h-5 text-[#FFFF00]" strokeWidth={2} />
+                  <Plus className="w-6 h-6 text-[#FFFF00]" strokeWidth={2.5} />
                 </button>
                 <button
                   onClick={() => setShowJoinModal(true)}
-                  className="w-12 h-12 rounded-full bg-black flex items-center justify-center active:scale-95 transition-transform"
+                  className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-black flex items-center justify-center active:scale-90 active:bg-black/80 transition-all touch-manipulation"
                   disabled={!isAuthReady}
+                  aria-label="Join session"
                 >
-                  <Users className="w-5 h-5 text-[#FFFF00]" strokeWidth={2} />
+                  <Users className="w-6 h-6 text-[#FFFF00]" strokeWidth={2.5} />
                 </button>
               </div>
             </div>
 
-            {/* Center - Record button */}
+            {/* Center - Record button - larger for easy tapping */}
             <button
               onClick={recording ? stopRecording : () => startRecording()}
               disabled={!cameraReady || !isAuthReady}
-              className="relative active:scale-95 transition-transform"
+              className="relative active:scale-90 transition-all touch-manipulation"
+              aria-label={recording ? "Stop recording" : "Start recording"}
             >
-              <div className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center">
+              <div className="w-[76px] h-[76px] rounded-full border-4 border-white flex items-center justify-center shadow-lg">
                 {recording ? (
                   <div className="w-8 h-8 rounded-md bg-destructive" />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-destructive" />
+                  <div className="w-[60px] h-[60px] rounded-full bg-destructive" />
                 )}
               </div>
             </button>
 
             {/* Right placeholder for balance */}
-            <div className="w-12" />
+            <div className="w-14" />
           </div>
         </div>
       )}
