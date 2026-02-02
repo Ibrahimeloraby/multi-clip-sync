@@ -150,31 +150,34 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
             </div>
           ) : (
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {/* Owner's thumbnail - always show when focused on participant, tap to return to own view */}
+              {/* Owner's thumbnail - tap to return to own view */}
               {focusedPeer && localStream && (
-                <div
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log("YOU button clicked, clearing focusedPeer");
-                    setFocusedPeer(null);
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  className="relative w-20 h-14 rounded-lg overflow-hidden border-2 border-library-accent shrink-0 touch-manipulation active:scale-95 transition-transform cursor-pointer select-none"
-                >
-                  <video
-                    autoPlay
-                    playsInline
-                    muted
-                    ref={(el) => { if (el && localStream) el.srcObject = localStream; }}
-                    className="w-full h-full object-cover pointer-events-none select-none"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none bg-black/20">
-                    <div className="bg-library-accent text-black px-2 py-0.5 rounded text-[10px] font-bold shadow-md">
-                      YOU
+                <div className="relative w-20 h-14 shrink-0">
+                  {/* Video layer - no interaction */}
+                  <div className="absolute inset-0 rounded-lg overflow-hidden border-2 border-library-accent pointer-events-none">
+                    <video
+                      autoPlay
+                      playsInline
+                      muted
+                      ref={(el) => { if (el && localStream) el.srcObject = localStream; }}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <div className="bg-library-accent text-black px-2 py-0.5 rounded text-[10px] font-bold shadow-md">
+                        YOU
+                      </div>
                     </div>
                   </div>
+                  {/* Invisible click layer on top */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log("YOU button tapped");
+                      setFocusedPeer(null);
+                    }}
+                    className="absolute inset-0 z-10 rounded-lg touch-manipulation active:bg-white/10 transition-colors"
+                    aria-label="Return to your camera"
+                  />
                 </div>
               )}
 
