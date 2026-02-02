@@ -170,7 +170,7 @@ const VideosScreen = () => {
     }
   };
 
-  const fetchSessionVideos = async (sessionId: string, isOwner: boolean, isCompleted: boolean) => {
+  const fetchSessionVideos = async (sessionId: string, isOwner: boolean) => {
     const { data: { session: authSession } } = await supabase.auth.getSession();
     if (!authSession?.user) return;
 
@@ -180,9 +180,8 @@ const VideosScreen = () => {
       .eq('session_id', sessionId)
       .order('uploaded_at', { ascending: false });
 
-    // Show all videos if owner OR if session is completed
-    // Only restrict to user's own videos if session is still active and user is not owner
-    if (!isOwner && !isCompleted) {
+    // Owner sees all videos, participants only see their own
+    if (!isOwner) {
       query = query.eq('user_id', authSession.user.id);
     }
 
@@ -196,8 +195,7 @@ const VideosScreen = () => {
     } else {
       setExpandedSession(session.id);
       const isOwner = session.owner_id === userId;
-      const isCompleted = !session.is_active;
-      fetchSessionVideos(session.id, isOwner, isCompleted);
+      fetchSessionVideos(session.id, isOwner);
     }
   };
 
@@ -318,14 +316,9 @@ const VideosScreen = () => {
                 {/* Expanded videos list */}
                 {isExpanded && (
                   <div className="border-t border-border px-4 py-3 space-y-2 bg-muted/20">
-                    {!isOwner && session.is_active && (
+                    {!isOwner && (
                       <p className="text-xs text-muted-foreground mb-2">
-                        You can only see your own videos until the session is completed.
-                      </p>
-                    )}
-                    {!session.is_active && (
-                      <p className="text-xs text-green-600 mb-2">
-                        ✓ Session completed — all participant videos are now visible
+                        You can only see your own videos. Session owner can see all.
                       </p>
                     )}
                     {sessionVideos.length === 0 ? (
