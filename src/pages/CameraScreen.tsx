@@ -7,6 +7,7 @@ import VideoTrimmer from "@/components/VideoTrimmer";
 import { JoinSessionModal } from "@/components/SessionModals";
 import QuickShare from "@/components/QuickShare";
 import LiveStreamView from "@/components/LiveStreamView";
+import LiveMonitorView from "@/components/LiveMonitorView";
 import {
   Sheet,
   SheetContent,
@@ -34,6 +35,7 @@ const CameraScreen = () => {
   
   // Live stream and nearby sessions state
   const [showLiveStream, setShowLiveStream] = useState(false);
+  const [showLiveMonitor, setShowLiveMonitor] = useState(false);
   const [showNearbySessions, setShowNearbySessions] = useState(false);
   const [nearbySessions, setNearbySessions] = useState<Array<{ id: string; name: string; time_code: string; distance: number }>>([]);
   const [loadingNearby, setLoadingNearby] = useState(false);
@@ -777,6 +779,7 @@ const CameraScreen = () => {
               onGoLive={isSessionOwner ? handleGoLive : undefined}
               onShowNearby={handleShowNearby}
               onShare={() => setTriggerShare(true)}
+              onMonitor={isSessionOwner && currentSession ? () => setShowLiveMonitor(true) : undefined}
             />
           </div>
         )}
@@ -884,6 +887,16 @@ const CameraScreen = () => {
           sessionId={currentSession.id}
           userId={currentUserId}
           onClose={() => setShowLiveStream(false)}
+        />
+      )}
+
+      {/* Live Monitor View - Owner only */}
+      {showLiveMonitor && currentSession && currentUserId && (
+        <LiveMonitorView
+          sessionId={currentSession.id}
+          userId={currentUserId}
+          localStream={stream}
+          onClose={() => setShowLiveMonitor(false)}
         />
       )}
 
