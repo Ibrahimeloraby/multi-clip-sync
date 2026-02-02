@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera, Film, Radio, Globe, Share2 } from "lucide-react";
+import { ZoomIn, ZoomOut, Flashlight, FlashlightOff, SwitchCamera, Film, Radio, Globe, Share2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 interface CameraControlsProps {
@@ -12,6 +11,7 @@ interface CameraControlsProps {
   onGoLive?: () => void;
   onShowNearby?: () => void;
   onShare?: () => void;
+  onMonitor?: () => void;
 }
 
 interface CameraCapabilities {
@@ -28,7 +28,7 @@ interface ExtendedMediaTrackSettings {
   zoom?: number;
 }
 
-const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onShowNearby, onShare }: CameraControlsProps) => {
+const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onShowNearby, onShare, onMonitor }: CameraControlsProps) => {
   const navigate = useNavigate();
   const [capabilities, setCapabilities] = useState<CameraCapabilities>({
     zoom: null,
@@ -119,6 +119,18 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
 
   return (
     <div className="flex flex-col gap-2">
+      {/* Monitor Button - for session owners to view participant feeds */}
+      {onMonitor && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onMonitor}
+          className={neonYellow}
+        >
+          <Eye className="w-5 h-5" />
+        </Button>
+      )}
+
       {/* Go Live Button */}
       {onGoLive && (
         <Button
