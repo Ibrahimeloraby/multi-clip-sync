@@ -22,35 +22,50 @@ interface NearbySession {
 const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverlayProps) => {
   const [nearbySessions, setNearbySessions] = useState<NearbySession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    const getCurrentLocationAndFetch = async () => {
+      if (!navigator.geolocation) {
+        if (isMounted) {
+          toast.error('Location not available');
+          setLoading(false);
+        }
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          if (!isMounted) return;
+          const { latitude, longitude } = position.coords;
+          await fetchNearbySessions(latitude, longitude, isMounted);
+        },
+        (error) => {
+          if (!isMounted) return;
+          console.error('Geolocation error:', error);
+          toast.error('Could not get location');
+          setLoading(false);
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+      );
+    };
+
     getCurrentLocationAndFetch();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const getCurrentLocationAndFetch = async () => {
-    setLoading(true);
-    
-    if (!navigator.geolocation) {
-      toast.error('Location not available');
-      setLoading(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        await fetchNearbySessions(latitude, longitude);
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        toast.error('Could not get location');
-        setLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+  const handleClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    onClose();
   };
 
-  const fetchNearbySessions = async (lat: number, lng: number) => {
+  const fetchNearbySessions = async (lat: number, lng: number, isMounted: boolean = true) => {
     try {
       const { data: sessions } = await supabase
         .from('sessions')
@@ -59,6 +74,8 @@ const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverl
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
 
+      if (!isMounted) return;
+
       if (sessions) {
         // Get participant counts
         const sessionIds = sessions.map(s => s.id);
@@ -66,6 +83,8 @@ const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverl
           .from('session_participants')
           .select('session_id')
           .in('session_id', sessionIds);
+
+        if (!isMounted) return;
 
         const countMap: Record<string, number> = {};
         participants?.forEach(p => {
@@ -89,7 +108,9 @@ const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverl
     } catch (error) {
       console.error('Failed to fetch nearby:', error);
     } finally {
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
   };
 
@@ -124,7 +145,7 @@ const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverl
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-full bg-black/60 backdrop-blur-sm text-library-accent hover:bg-black/80"
           >
             <X className="w-5 h-5" />
