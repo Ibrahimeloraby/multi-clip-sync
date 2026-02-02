@@ -119,40 +119,62 @@ const CameraScreen = () => {
     initAuth();
   }, []);
 
-  // Initialize camera on mount and when facing mode changes
+  // Initialize camera on mount
   useEffect(() => {
+    startCamera();
+    return () => stopCamera();
+  }, []);
+
+  // Handle camera facing mode changes - separate effect to handle recording seamlessly
+  const pendingFacingModeRef = useRef<"user" | "environment" | null>(null);
+  
+  useEffect(() => {
+    // Skip if this is the initial mount (no pending change)
+    if (pendingFacingModeRef.current === null) {
+      pendingFacingModeRef.current = facingMode;
+      return;
+    }
+    
+    // Skip if facing mode hasn't actually changed
+    if (pendingFacingModeRef.current === facingMode) {
+      return;
+    }
+    
+    pendingFacingModeRef.current = facingMode;
+    
     const switchCamera = async () => {
-      // If switching during recording, handle seamlessly
-      if (isSwitchingCameraRef.current && recording) {
-        // Stop current recorder without triggering upload
-        if (mediaRecorderRef.current?.state === 'recording') {
-          mediaRecorderRef.current.stop();
-        }
-        
-        // Wait a moment for cleanup
-        await new Promise(resolve => setTimeout(resolve, 100));
+      const wasRecording = mediaRecorderRef.current?.state === 'recording';
+      const sessionForResume = recordingSessionRef.current;
+      
+      // If recording, stop the recorder first (flag prevents upload)
+      if (wasRecording && mediaRecorderRef.current) {
+        isSwitchingCameraRef.current = true;
+        mediaRecorderRef.current.stop();
+        // Wait for onstop to complete
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+      
+      // Stop old stream and start new one with new facing mode
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
       
       await startCamera();
       
-      // Resume recording with new stream after camera switch
-      if (isSwitchingCameraRef.current && recording && recordingSessionRef.current) {
-        // Wait for camera to be ready
-        await new Promise(resolve => setTimeout(resolve, 200));
+      // Resume recording if we were recording before
+      if (wasRecording && sessionForResume) {
+        // Wait for camera to fully initialize
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        if (stream) {
-          startRecordingWithSession(recordingSessionRef.current);
+        // Start a new recorder with the new stream
+        if (videoRef.current?.srcObject) {
+          startRecordingWithSession(sessionForResume);
         }
         isSwitchingCameraRef.current = false;
       }
     };
     
     switchCamera();
-    return () => {
-      if (!isSwitchingCameraRef.current) {
-        stopCamera();
-      }
-    };
   }, [facingMode]);
 
   // Recording timer
@@ -265,11 +287,10 @@ const CameraScreen = () => {
   };
 
   const handleFacingModeChange = (mode: "user" | "environment") => {
-    // Set flag to indicate we're switching cameras (not stopping recording)
-    if (recording) {
-      isSwitchingCameraRef.current = true;
+    // Simply change facing mode - the useEffect will handle the seamless switch
+    if (mode !== facingMode) {
+      setFacingMode(mode);
     }
-    setFacingMode(mode);
   };
 
   const startRecording = async (sessionToUse?: { id: string; name: string; timeCode: string }) => {
