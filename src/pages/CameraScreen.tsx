@@ -288,11 +288,14 @@ const CameraScreen = () => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
+      // Capture session in closure to avoid stale state
+      const capturedSession = session;
+      
       mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         if (blob.size > 1000) {
           // Upload directly without trimmer and navigate to videos
-          await uploadVideo(blob);
+          await uploadVideoWithSession(blob, capturedSession);
           navigate('/videos');
         } else {
           toast.error("Recording too short");
@@ -314,9 +317,7 @@ const CameraScreen = () => {
     }
   };
 
-  const uploadVideo = async (blob: Blob) => {
-    if (!currentSession) return;
-    
+  const uploadVideoWithSession = async (blob: Blob, session: { id: string; name: string; timeCode: string }) => {
     setUploading(true);
     try {
       const { data: { session: authSession } } = await supabase.auth.getSession();
@@ -347,7 +348,9 @@ const CameraScreen = () => {
         video.src = URL.createObjectURL(blob);
       });
 
-      const filePath = `${authSession.user.id}/${currentSession.id}/${Date.now()}-recording.webm`;
+      const filePath = `${authSession.user.id}/${session.id}/${Date.now()}-recording.webm`;
+      
+      console.log("Uploading video to session:", session.id, "path:", filePath);
       
       const { error: uploadError } = await supabase.storage
         .from('videos')
@@ -359,8 +362,8 @@ const CameraScreen = () => {
         .from('videos')
         .getPublicUrl(filePath);
 
-      await supabase.from('videos').insert({
-        session_id: currentSession.id,
+      const { error: dbError } = await supabase.from('videos').insert({
+        session_id: session.id,
         user_id: authSession.user.id,
         device_id: profile?.device_id || 'unknown',
         storage_path: filePath,
@@ -368,6 +371,9 @@ const CameraScreen = () => {
         duration: duration,
       });
 
+      if (dbError) throw dbError;
+
+      console.log("Video uploaded successfully to session:", session.id);
       toast.success("Video uploaded!");
     } catch (error: any) {
       console.error("Upload error:", error);
@@ -375,6 +381,15 @@ const CameraScreen = () => {
     } finally {
       setUploading(false);
     }
+  };
+
+  // Legacy function for file uploads - uses currentSession state
+  const uploadVideo = async (blob: Blob) => {
+    if (!currentSession) {
+      toast.error("No active session");
+      return;
+    }
+    await uploadVideoWithSession(blob, currentSession);
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
