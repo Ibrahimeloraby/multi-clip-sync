@@ -171,23 +171,30 @@ const CameraControls = ({ stream, facingMode, onFacingModeChange, onGoLive, onSh
         </Button>
       )}
 
-      {/* Zoom Control - better touch area */}
+      {/* Zoom Control - minimal design */}
       {hasZoom && (
-        <div className="flex flex-col items-center gap-2 bg-[#FFFF00]/90 backdrop-blur-sm rounded-full py-3 px-3 shadow-lg shadow-[#FFFF00]/30 touch-manipulation">
-          <ZoomIn className="w-5 h-5 text-black/80" />
-          <div className="h-24 w-10 flex items-center justify-center">
-            <Slider
-              value={[currentZoom]}
-              min={capabilities.zoom!.min}
-              max={capabilities.zoom!.max}
-              step={capabilities.zoom!.step}
-              onValueChange={handleZoomChange}
-              orientation="vertical"
-              className="h-full touch-manipulation"
+        <div className="flex flex-col items-center gap-1 py-2 touch-manipulation">
+          <button 
+            onClick={() => handleZoomChange([Math.min(currentZoom + 0.5, capabilities.zoom!.max)])}
+            className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-[#FFFF00]/30 active:scale-90 transition-transform"
+          >
+            <ZoomIn className="w-4 h-4 text-[#FFFF00]" />
+          </button>
+          <div className="h-20 w-1 bg-black/60 backdrop-blur-sm rounded-full relative overflow-hidden border border-[#FFFF00]/20">
+            <div 
+              className="absolute bottom-0 left-0 right-0 bg-[#FFFF00] rounded-full transition-all"
+              style={{ 
+                height: `${((currentZoom - capabilities.zoom!.min) / (capabilities.zoom!.max - capabilities.zoom!.min)) * 100}%` 
+              }}
             />
           </div>
-          <ZoomOut className="w-5 h-5 text-black/80" />
-          <span className="text-xs text-black/80 font-semibold">{currentZoom.toFixed(1)}x</span>
+          <button 
+            onClick={() => handleZoomChange([Math.max(currentZoom - 0.5, capabilities.zoom!.min)])}
+            className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-[#FFFF00]/30 active:scale-90 transition-transform"
+          >
+            <ZoomOut className="w-4 h-4 text-[#FFFF00]" />
+          </button>
+          <span className="text-[10px] text-[#FFFF00] font-bold mt-0.5">{currentZoom.toFixed(1)}x</span>
         </div>
       )}
 
