@@ -233,6 +233,11 @@ const CameraScreen = () => {
   };
 
   const handleFacingModeChange = (mode: "user" | "environment") => {
+    // Prevent camera switch while recording - it would stop the recording
+    if (recording) {
+      toast.info("Stop recording first to switch camera");
+      return;
+    }
     setFacingMode(mode);
   };
 
