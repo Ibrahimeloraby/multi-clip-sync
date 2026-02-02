@@ -89,12 +89,12 @@ const ParticipantLocationsOverlay = ({ sessionId, userId, onClose }: Participant
   const onlineCount = participants.filter(p => p.isOnline).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
-      {/* Main view - with background */}
-      <div className="flex-1 relative bg-black/90">
+    <div className="fixed inset-0 z-50 flex flex-col bg-black">
+      {/* Main view */}
+      <div className="flex-1 relative">
         {/* Header */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between safe-area-mt">
-          <div className="flex items-center gap-2 bg-library-accent text-black px-3 py-1.5 rounded-full text-xs font-bold">
+          <div className="flex items-center gap-2 bg-[#FFFF00] text-black px-3 py-1.5 rounded-full text-xs font-bold">
             <Users className="w-4 h-4" />
             {participants.length} in session
           </div>
@@ -103,7 +103,7 @@ const ParticipantLocationsOverlay = ({ sessionId, userId, onClose }: Participant
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="rounded-full bg-black/60 backdrop-blur-sm text-library-accent hover:bg-black/80"
+            className="rounded-full bg-black/60 backdrop-blur-sm text-[#FFFF00] hover:bg-black/80 border border-[#FFFF00]/30"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -113,8 +113,8 @@ const ParticipantLocationsOverlay = ({ sessionId, userId, onClose }: Participant
         <div className="absolute inset-0 flex items-center justify-center px-6">
           <div className="w-full max-w-sm">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-library-accent/20 flex items-center justify-center mx-auto mb-3">
-                <MapPin className="w-8 h-8 text-library-accent" />
+              <div className="w-16 h-16 rounded-full bg-[#FFFF00]/20 flex items-center justify-center mx-auto mb-3 border border-[#FFFF00]/30">
+                <MapPin className="w-8 h-8 text-[#FFFF00]" />
               </div>
               <h2 className="text-lg font-bold text-white mb-1">Session Participants</h2>
               <p className="text-sm text-white/60">{onlineCount} online now</p>
@@ -124,25 +124,25 @@ const ParticipantLocationsOverlay = ({ sessionId, userId, onClose }: Participant
       </div>
 
       {/* Bottom panel - Participant list */}
-      <div className="bg-library-surface border-t border-library-border safe-area-pb max-h-[40vh] overflow-auto">
+      <div className="bg-black border-t border-[#FFFF00]/20 safe-area-pb max-h-[40vh] overflow-auto">
         <div className="px-4 py-3 space-y-2">
           {participants.length === 0 ? (
             <div className="flex items-center justify-center py-6 text-center">
-              <Users className="w-5 h-5 text-library-text-muted mr-2" />
-              <span className="text-sm text-library-text-muted">No participants yet</span>
+              <Users className="w-5 h-5 text-white/40 mr-2" />
+              <span className="text-sm text-white/40">No participants yet</span>
             </div>
           ) : (
             participants.map((participant) => (
               <div
                 key={participant.id}
-                className="flex items-center gap-3 p-3 bg-black/40 rounded-xl"
+                className="flex items-center gap-3 p-3 bg-[#FFFF00]/10 border border-[#FFFF00]/20 rounded-xl"
               >
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-library-accent/20 flex items-center justify-center">
-                    <User className="w-5 h-5 text-library-accent" />
+                  <div className="w-10 h-10 rounded-full bg-black border border-[#FFFF00]/30 flex items-center justify-center">
+                    <User className="w-5 h-5 text-[#FFFF00]" />
                   </div>
                   {/* Online indicator */}
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-library-surface ${
+                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-black ${
                     participant.isOnline ? 'bg-green-500' : 'bg-gray-500'
                   }`} />
                 </div>
@@ -150,7 +150,7 @@ const ParticipantLocationsOverlay = ({ sessionId, userId, onClose }: Participant
                   <p className="font-medium text-white truncate">
                     {participant.username}
                     {participant.id === userId && (
-                      <span className="ml-2 text-[10px] bg-library-accent text-black px-1.5 py-0.5 rounded-full">
+                      <span className="ml-2 text-[10px] bg-[#FFFF00] text-black px-1.5 py-0.5 rounded-full font-bold">
                         YOU
                       </span>
                     )}
