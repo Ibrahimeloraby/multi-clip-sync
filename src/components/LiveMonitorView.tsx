@@ -20,6 +20,7 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [focusedPeer, setFocusedPeer] = useState<string | null>(null);
   const [mutedPeers, setMutedPeers] = useState<Set<string>>(new Set());
+  const localVideoRef = useRef<HTMLVideoElement>(null);
 
   const { remoteStreams, isConnecting } = useWebRTC({
     sessionId,
@@ -27,6 +28,13 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
     localStream,
     enabled: true,
   });
+
+  // Set up local video
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
 
   // Fetch participant info
   useEffect(() => {
@@ -48,34 +56,22 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
 
     fetchParticipants();
 
-    // Subscribe to realtime participant changes
     const channel = supabase
       .channel(`monitor-participants-${sessionId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "session_participants",
-          filter: `session_id=eq.${sessionId}`,
-        },
+        { event: "*", schema: "public", table: "session_participants", filter: `session_id=eq.${sessionId}` },
         () => fetchParticipants()
       )
       .subscribe();
 
-    return () => {
-      channel.unsubscribe();
-    };
+    return () => { channel.unsubscribe(); };
   }, [sessionId, userId]);
 
   const toggleMute = (peerId: string) => {
     setMutedPeers((prev) => {
       const next = new Set(prev);
-      if (next.has(peerId)) {
-        next.delete(peerId);
-      } else {
-        next.add(peerId);
-      }
+      next.has(peerId) ? next.delete(peerId) : next.add(peerId);
       return next;
     });
   };
@@ -88,124 +84,133 @@ const LiveMonitorView = ({ sessionId, userId, localStream, onClose }: LiveMonito
   const focusedStream = focusedPeer ? remoteStreams.get(focusedPeer) : null;
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-library-surface border-b border-library-border safe-area-pt">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-library-accent/20 border border-library-accent flex items-center justify-center">
-            <Users className="w-5 h-5 text-library-accent" />
-          </div>
-          <div>
-            <h1 className="text-library-text font-semibold">Live Monitor</h1>
-            <p className="text-xs text-library-text-muted">
-              {streamEntries.length} live feed{streamEntries.length !== 1 ? "s" : ""}
-            </p>
-          </div>
-        </div>
+    <div className="fixed inset-0 z-50 flex flex-col">
+      {/* Main view - Owner's camera or focused participant */}
+      <div className="flex-1 relative bg-black">
+        {focusedStream && focusedPeer ? (
+          // Show focused participant full screen
+          <>
+            <VideoFeed stream={focusedStream} muted={mutedPeers.has(focusedPeer)} />
+            <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive/90 text-white px-3 py-1 rounded-full text-xs font-medium safe-area-mt">
+              <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              {participants.find((p) => p.id === focusedPeer)?.username || "Participant"}
+            </div>
+            <button
+              onClick={() => setFocusedPeer(null)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-library-accent/30 flex items-center justify-center safe-area-mt"
+            >
+              <Minimize2 className="w-5 h-5 text-library-accent" />
+            </button>
+          </>
+        ) : (
+          // Show owner's camera as main view
+          <>
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-4 left-4 flex items-center gap-2 bg-library-accent text-black px-3 py-1 rounded-full text-xs font-bold safe-area-mt">
+              YOU
+            </div>
+          </>
+        )}
+
+        {/* Close button */}
         <Button
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="rounded-full text-library-accent hover:bg-library-surface-hover"
+          className="absolute top-4 right-4 rounded-full bg-black/60 backdrop-blur-sm text-library-accent hover:bg-black/80 safe-area-mt"
         >
           <X className="w-5 h-5" />
         </Button>
-      </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-3">
-        {isConnecting ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <div className="w-12 h-12 border-2 border-library-accent border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-library-text-muted">Connecting to participants...</p>
-          </div>
-        ) : streamEntries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <div className="w-20 h-20 rounded-full bg-library-surface border-2 border-library-accent/50 flex items-center justify-center mb-4">
-              <Users className="w-10 h-10 text-library-accent/50" />
-            </div>
-            <h3 className="text-library-text font-semibold mb-1">No live feeds yet</h3>
-            <p className="text-sm text-library-text-muted">
-              Participants will appear here when they go live
-            </p>
-          </div>
-        ) : focusedStream && focusedPeer ? (
-          // Focused view - single large video
-          <div className="h-full flex flex-col gap-3">
-            <div className="flex-1 relative rounded-xl overflow-hidden border-2 border-library-accent">
-              <VideoFeed
-                stream={focusedStream}
-                muted={mutedPeers.has(focusedPeer)}
-              />
-              <FeedOverlay
-                peerId={focusedPeer}
-                username={participants.find((p) => p.id === focusedPeer)?.username || "User"}
-                isMuted={mutedPeers.has(focusedPeer)}
-                onToggleMute={() => toggleMute(focusedPeer)}
-                onToggleFocus={() => toggleFocus(focusedPeer)}
-                isFocused
-              />
-            </div>
-            {/* Thumbnails */}
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {streamEntries
-                .filter(([id]) => id !== focusedPeer)
-                .map(([peerId, stream]) => (
-                  <button
-                    key={peerId}
-                    onClick={() => toggleFocus(peerId)}
-                    className="w-24 h-16 rounded-lg overflow-hidden border border-library-border shrink-0 relative"
-                  >
-                    <VideoFeed stream={stream} muted />
-                    <div className="absolute bottom-1 left-1 bg-black/60 px-1.5 py-0.5 rounded text-[10px] text-library-accent">
-                      {participants.find((p) => p.id === peerId)?.username?.slice(0, 8) || "User"}
-                    </div>
-                  </button>
-                ))}
-            </div>
-          </div>
-        ) : (
-          // Grid view
-          <div
-            className={`grid gap-3 h-full ${
-              streamEntries.length === 1
-                ? "grid-cols-1"
-                : streamEntries.length === 2
-                ? "grid-cols-1 sm:grid-cols-2"
-                : streamEntries.length <= 4
-                ? "grid-cols-2"
-                : "grid-cols-2 sm:grid-cols-3"
-            }`}
-          >
-            {streamEntries.map(([peerId, stream]) => (
-              <div
-                key={peerId}
-                className="relative rounded-xl overflow-hidden border border-library-border bg-library-surface aspect-video"
-              >
-                <VideoFeed stream={stream} muted={mutedPeers.has(peerId)} />
-                <FeedOverlay
-                  peerId={peerId}
-                  username={participants.find((p) => p.id === peerId)?.username || "User"}
-                  isMuted={mutedPeers.has(peerId)}
-                  onToggleMute={() => toggleMute(peerId)}
-                  onToggleFocus={() => toggleFocus(peerId)}
-                  isFocused={false}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Participant count badge */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm text-library-text px-3 py-1.5 rounded-full text-xs safe-area-mt">
+          <Users className="w-4 h-4 text-library-accent" />
+          <span>{streamEntries.length} live</span>
+        </div>
       </div>
 
-      {/* Footer status */}
-      <footer className="px-4 py-3 bg-library-surface border-t border-library-border safe-area-pb">
-        <div className="flex items-center justify-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs text-library-text-muted">
-            Monitoring {streamEntries.length} participant{streamEntries.length !== 1 ? "s" : ""}
-          </span>
+      {/* Bottom panel - Participant tiles */}
+      <div className="bg-library-surface border-t border-library-border safe-area-pb">
+        <div className="px-3 py-3">
+          {isConnecting ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="w-6 h-6 border-2 border-library-accent border-t-transparent rounded-full animate-spin mr-2" />
+              <span className="text-xs text-library-text-muted">Connecting...</span>
+            </div>
+          ) : streamEntries.length === 0 ? (
+            <div className="flex items-center justify-center py-4 text-center">
+              <Users className="w-5 h-5 text-library-text-muted mr-2" />
+              <span className="text-xs text-library-text-muted">Waiting for participants to go live...</span>
+            </div>
+          ) : (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {/* Owner's thumbnail when viewing a participant */}
+              {focusedPeer && localStream && (
+                <button
+                  onClick={() => setFocusedPeer(null)}
+                  className="relative w-20 h-14 rounded-lg overflow-hidden border-2 border-library-accent shrink-0"
+                >
+                  <video
+                    autoPlay
+                    playsInline
+                    muted
+                    ref={(el) => { if (el) el.srcObject = localStream; }}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-0.5 left-0.5 bg-library-accent text-black px-1 py-0.5 rounded text-[8px] font-bold">
+                    YOU
+                  </div>
+                </button>
+              )}
+
+              {/* Participant tiles */}
+              {streamEntries.map(([peerId, stream]) => {
+                const participant = participants.find((p) => p.id === peerId);
+                const isFocused = focusedPeer === peerId;
+
+                return (
+                  <div
+                    key={peerId}
+                    className={`relative w-20 h-14 rounded-lg overflow-hidden shrink-0 ${
+                      isFocused ? "border-2 border-library-accent" : "border border-library-border"
+                    }`}
+                  >
+                    <button onClick={() => toggleFocus(peerId)} className="w-full h-full">
+                      <VideoFeed stream={stream} muted={mutedPeers.has(peerId)} />
+                    </button>
+
+                    {/* Live indicator */}
+                    <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-destructive animate-pulse" />
+
+                    {/* Username */}
+                    <div className="absolute bottom-0.5 left-0.5 bg-black/70 px-1 py-0.5 rounded text-[8px] text-library-accent font-medium truncate max-w-[70px]">
+                      {participant?.username?.slice(0, 8) || "User"}
+                    </div>
+
+                    {/* Mute toggle */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleMute(peerId); }}
+                      className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center"
+                    >
+                      {mutedPeers.has(peerId) ? (
+                        <VolumeX className="w-3 h-3 text-library-text-muted" />
+                      ) : (
+                        <Volume2 className="w-3 h-3 text-library-accent" />
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </footer>
+      </div>
     </div>
   );
 };
@@ -228,65 +233,6 @@ const VideoFeed = ({ stream, muted }: { stream: MediaStream; muted: boolean }) =
       muted={muted}
       className="w-full h-full object-cover"
     />
-  );
-};
-
-// Overlay with controls
-const FeedOverlay = ({
-  peerId,
-  username,
-  isMuted,
-  onToggleMute,
-  onToggleFocus,
-  isFocused,
-}: {
-  peerId: string;
-  username: string;
-  isMuted: boolean;
-  onToggleMute: () => void;
-  onToggleFocus: () => void;
-  isFocused: boolean;
-}) => {
-  return (
-    <>
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-
-      {/* Live indicator */}
-      <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-destructive/90 text-white px-2 py-0.5 rounded-full text-xs font-medium">
-        <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-        LIVE
-      </div>
-
-      {/* Username */}
-      <div className="absolute bottom-2 left-2 text-library-accent font-semibold text-sm">
-        @{username}
-      </div>
-
-      {/* Controls */}
-      <div className="absolute bottom-2 right-2 flex gap-1.5">
-        <button
-          onClick={onToggleMute}
-          className="w-8 h-8 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/30 flex items-center justify-center"
-        >
-          {isMuted ? (
-            <VolumeX className="w-4 h-4 text-library-accent" />
-          ) : (
-            <Volume2 className="w-4 h-4 text-library-accent" />
-          )}
-        </button>
-        <button
-          onClick={onToggleFocus}
-          className="w-8 h-8 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/30 flex items-center justify-center"
-        >
-          {isFocused ? (
-            <Minimize2 className="w-4 h-4 text-library-accent" />
-          ) : (
-            <Maximize2 className="w-4 h-4 text-library-accent" />
-          )}
-        </button>
-      </div>
-    </>
   );
 };
 
