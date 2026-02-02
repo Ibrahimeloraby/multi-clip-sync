@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { X, Users, User, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ParticipantLocationsOverlayProps {
@@ -18,6 +17,7 @@ interface Participant {
 const ParticipantLocationsOverlay = ({ sessionId, userId, onClose }: ParticipantLocationsOverlayProps) => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [isClosing, setIsClosing] = useState(false);
 
   // Fetch participants
   useEffect(() => {
@@ -86,82 +86,91 @@ const ParticipantLocationsOverlay = ({ sessionId, userId, onClose }: Participant
     })));
   }, [onlineUsers]);
 
+  const handleClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    onClose();
+  };
+
   const onlineCount = participants.filter(p => p.isOnline).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {/* Main view */}
-      <div className="flex-1 relative">
-        {/* Header */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between safe-area-mt">
-          <div className="flex items-center gap-2 bg-[#FFFF00] text-black px-3 py-1.5 rounded-full text-xs font-bold">
-            <Users className="w-4 h-4" />
-            {participants.length} in session
+    <div className="fixed inset-0 z-50 pointer-events-none">
+      {/* Tap outside to close */}
+      <div 
+        className="absolute inset-0 pointer-events-auto" 
+        onClick={handleClose}
+      />
+      
+      {/* Floating card - centered */}
+      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-xs pointer-events-auto safe-area-mt">
+        {/* Header pill */}
+        <div className="bg-black/80 backdrop-blur-2xl border border-[#FFFF00]/30 rounded-2xl shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-[#FFFF00]/20 flex items-center justify-center">
+                <Users className="w-4 h-4 text-[#FFFF00]" />
+              </div>
+              <div>
+                <p className="text-white text-sm font-medium">{participants.length} Participants</p>
+                <p className="text-white/50 text-xs">{onlineCount} online</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClose();
+              }}
+              className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 active:bg-white/30 touch-manipulation"
+              aria-label="Close participants"
+            >
+              <X className="w-5 h-5 text-white/70" />
+            </button>
           </div>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="rounded-full bg-black/60 backdrop-blur-sm text-[#FFFF00] hover:bg-black/80 border border-[#FFFF00]/30"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Centered content */}
-        <div className="absolute inset-0 flex items-center justify-center px-6">
-          <div className="w-full max-w-sm">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-[#FFFF00]/20 flex items-center justify-center mx-auto mb-3 border border-[#FFFF00]/30">
-                <MapPin className="w-8 h-8 text-[#FFFF00]" />
+          {/* Participant list */}
+          <div className="max-h-[50vh] overflow-auto">
+            {participants.length === 0 ? (
+              <div className="flex items-center justify-center py-6 text-center px-4">
+                <Users className="w-4 h-4 text-white/40 mr-2" />
+                <span className="text-sm text-white/40">No participants yet</span>
               </div>
-              <h2 className="text-lg font-bold text-white mb-1">Session Participants</h2>
-              <p className="text-sm text-white/60">{onlineCount} online now</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom panel - Participant list */}
-      <div className="bg-black border-t border-[#FFFF00]/20 safe-area-pb max-h-[40vh] overflow-auto">
-        <div className="px-4 py-3 space-y-2">
-          {participants.length === 0 ? (
-            <div className="flex items-center justify-center py-6 text-center">
-              <Users className="w-5 h-5 text-white/40 mr-2" />
-              <span className="text-sm text-white/40">No participants yet</span>
-            </div>
-          ) : (
-            participants.map((participant) => (
-              <div
-                key={participant.id}
-                className="flex items-center gap-3 p-3 bg-[#FFFF00]/10 border border-[#FFFF00]/20 rounded-xl"
-              >
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-black border border-[#FFFF00]/30 flex items-center justify-center">
-                    <User className="w-5 h-5 text-[#FFFF00]" />
+            ) : (
+              <div className="p-2 space-y-1">
+                {participants.map((participant) => (
+                  <div
+                    key={participant.id}
+                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors"
+                  >
+                    <div className="relative">
+                      <div className="w-9 h-9 rounded-full bg-[#FFFF00]/10 border border-[#FFFF00]/30 flex items-center justify-center">
+                        <User className="w-4 h-4 text-[#FFFF00]" />
+                      </div>
+                      {/* Online indicator */}
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-black ${
+                        participant.isOnline ? 'bg-green-500' : 'bg-gray-500'
+                      }`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-white text-sm truncate">
+                        {participant.username}
+                        {participant.id === userId && (
+                          <span className="ml-2 text-[10px] bg-[#FFFF00] text-black px-1.5 py-0.5 rounded-full font-bold">
+                            YOU
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-white/40">
+                        {participant.isOnline ? 'Online' : 'Offline'}
+                      </p>
+                    </div>
                   </div>
-                  {/* Online indicator */}
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-black ${
-                    participant.isOnline ? 'bg-green-500' : 'bg-gray-500'
-                  }`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white truncate">
-                    {participant.username}
-                    {participant.id === userId && (
-                      <span className="ml-2 text-[10px] bg-[#FFFF00] text-black px-1.5 py-0.5 rounded-full font-bold">
-                        YOU
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-xs text-white/50">
-                    {participant.isOnline ? 'Online' : 'Offline'}
-                  </p>
-                </div>
+                ))}
               </div>
-            ))
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

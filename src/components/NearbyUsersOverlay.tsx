@@ -164,10 +164,14 @@ const NearbyUsersOverlay = ({ userId, onClose, onJoinSession }: NearbyUsersOverl
           )}
           
           <button
-            onClick={handleClose}
-            className="ml-1 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClose();
+            }}
+            className="ml-1 w-8 h-8 min-w-[32px] min-h-[32px] rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 active:bg-white/30 touch-manipulation"
+            aria-label="Close nearby sessions"
           >
-            <X className="w-3 h-3 text-white/60" />
+            <X className="w-4 h-4 text-white/80" />
           </button>
         </div>
         
