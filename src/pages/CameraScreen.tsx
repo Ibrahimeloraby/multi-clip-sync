@@ -770,8 +770,8 @@ const CameraScreen = () => {
         )}
 
         {/* Camera controls (right side) - with safe area for notched devices */}
-        {cameraReady && !recording && !showTrimmer && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 pr-[env(safe-area-inset-right)]">
+        {cameraReady && !showTrimmer && (
+          <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 pr-[env(safe-area-inset-right)] transition-opacity ${recording ? 'opacity-40' : 'opacity-100'}`}>
             <CameraControls
               stream={stream}
               facingMode={facingMode}
