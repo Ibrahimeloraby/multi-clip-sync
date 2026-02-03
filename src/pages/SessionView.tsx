@@ -9,9 +9,9 @@ import LiveStreamView from "@/components/LiveStreamView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check, 
-  Film, Clock, ChevronRight, Link as LinkIcon, CheckCircle2, Lock, Radio, Globe
+import {
+  Video, Play, Users, Download, Share2, Trash2, Crown, Copy, Check,
+  Film, Clock, ChevronRight, Link as LinkIcon, CheckCircle2, Lock, Radio, Globe, Layers
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import SessionAngleSwitcher from "@/components/SessionAngleSwitcher";
 
 interface Session {
   id: string;
@@ -96,6 +97,7 @@ const SessionView = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showSharePanel, setShowSharePanel] = useState(false);
   const [showLiveStream, setShowLiveStream] = useState(false);
+  const [showSequenceEditor, setShowSequenceEditor] = useState(false);
 
   const displayedVideos = !isOwner 
     ? videos.filter(v => v.user_id === user?.id)
@@ -348,6 +350,17 @@ const SessionView = () => {
                 <Share2 className="w-4 h-4 mr-2" />
                 Invite
               </Button>
+              {isOwner && videos.length >= 2 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSequenceEditor(true)}
+                  className="h-9"
+                >
+                  <Layers className="w-4 h-4 mr-2" />
+                  Edit Sequence
+                </Button>
+              )}
               {isOwner && videos.length > 0 && (
                 <Button onClick={handleExport} size="sm" className="h-9 gradient-primary">
                   <Download className="w-4 h-4 mr-2" />
@@ -841,6 +854,26 @@ const SessionView = () => {
           sessionId={session.id}
           userId={user.id}
           onClose={() => setShowLiveStream(false)}
+        />
+      )}
+
+      {/* Sequence Editor Modal */}
+      {showSequenceEditor && session && (
+        <SessionAngleSwitcher
+          open={showSequenceEditor}
+          onOpenChange={setShowSequenceEditor}
+          sessionId={session.id}
+          videos={videos.map(v => ({
+            id: v.id,
+            user_id: v.user_id,
+            device_id: v.device_id,
+            storage_path: v.storage_path,
+            thumbnail_url: v.thumbnail_url,
+            duration: v.duration,
+            uploaded_at: v.uploaded_at,
+            profiles: v.profiles ? { username: v.profiles.username } : undefined,
+          }))}
+          onSave={() => fetchSessionData()}
         />
       )}
     </div>

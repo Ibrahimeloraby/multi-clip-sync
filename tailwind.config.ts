@@ -117,6 +117,22 @@ export default {
           "50%": {
             boxShadow: "0 0 40px hsla(270, 70%, 60%, 0.5)"
           }
+        },
+        "shimmer": {
+          "0%": {
+            transform: "translateX(-100%)"
+          },
+          "100%": {
+            transform: "translateX(100%)"
+          }
+        },
+        "pulse-soft": {
+          "0%, 100%": {
+            opacity: "1"
+          },
+          "50%": {
+            opacity: "0.6"
+          }
         }
       },
       animation: {
@@ -125,6 +141,8 @@ export default {
         "fade-in": "fade-in 0.5s ease-out",
         "scale-in": "scale-in 0.3s ease-out",
         "glow": "glow 2s ease-in-out infinite",
+        "shimmer": "shimmer 2s infinite",
+        "pulse-soft": "pulse-soft 2s ease-in-out infinite",
       },
     },
   },

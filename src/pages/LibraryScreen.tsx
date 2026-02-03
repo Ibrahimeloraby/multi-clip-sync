@@ -3,9 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   Film, Crown, Play, Download, Trash2, Loader2, ChevronRight, Clock,
-  Heart, MessageCircle, Share2, Volume2, VolumeX, Camera, Scissors
+  Heart, MessageCircle, Share2, Volume2, VolumeX, Camera, Scissors, Layers
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { VideoEditor, VideoEditMetadata } from "@/components/video-editor";
 import SessionTimeline from "@/components/SessionTimeline";
+import SessionAngleSwitcher from "@/components/SessionAngleSwitcher";
+import EnhancedFeedTab from "@/components/EnhancedFeedTab";
 
 interface Session {
   id: string;
@@ -192,7 +194,8 @@ const LibraryScreen = () => {
   const [loadingEdit, setLoadingEdit] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [timelineSession, setTimelineSession] = useState<{ id: string; name: string } | null>(null);
-  
+  const [sequenceSession, setSequenceSession] = useState<{ id: string; name: string; videos: VideoItem[] } | null>(null);
+
   // Feed tab state
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedVideos, setFeedVideos] = useState<FeedVideo[]>([]);
@@ -715,12 +718,28 @@ const LibraryScreen = () => {
                             ))
                           )}
 
-                          <Button
-                            className="w-full mt-2 bg-library-accent text-black hover:bg-library-accent-muted font-semibold"
-                            onClick={() => setTimelineSession({ id: session.id, name: session.name })}
-                          >
-                            View Full Timeline
-                          </Button>
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              className="flex-1 bg-library-accent text-black hover:bg-library-accent-muted font-semibold"
+                              onClick={() => setTimelineSession({ id: session.id, name: session.name })}
+                            >
+                              View Full Timeline
+                            </Button>
+                            {isOwner && sessionVideos.length >= 2 && (
+                              <Button
+                                variant="outline"
+                                className="border-library-accent text-library-accent hover:bg-library-accent/10"
+                                onClick={() => setSequenceSession({
+                                  id: session.id,
+                                  name: session.name,
+                                  videos: sessionVideos
+                                })}
+                              >
+                                <Layers className="w-4 h-4 mr-1" />
+                                Edit Sequence
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -859,6 +878,23 @@ const LibraryScreen = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Sequence Editor Modal */}
+      {sequenceSession && (
+        <SessionAngleSwitcher
+          open={!!sequenceSession}
+          onOpenChange={(open) => !open && setSequenceSession(null)}
+          sessionId={sequenceSession.id}
+          videos={sequenceSession.videos}
+          onSave={() => {
+            // Refresh the videos for this session
+            const session = sessions.find(s => s.id === sequenceSession.id);
+            if (session) {
+              fetchSessionVideos(session.id, session.owner_id === userId);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
