@@ -1,0 +1,51 @@
+name: Browser Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to run'
+        required: true
+        default: 'supabase:migrate'
+        type: choice
+        options:
+          - supabase:migrate
+          - supabase:secrets
+          - lovable:deploy
+          - all
+
+jobs:
+  automate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run automation
+        run: npx ts-node automation/run.ts ${{ github.event.inputs.action }}
+        env:
+          SUPABASE_EMAIL: ${{ secrets.SUPABASE_EMAIL }}
+          SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+          LOVABLE_EMAIL: ${{ secrets.LOVABLE_EMAIL }}
+          LOVABLE_PASSWORD: ${{ secrets.LOVABLE_PASSWORD }}
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: automation-screenshots
+          path: automation/screenshots/
+          retention-days: 7

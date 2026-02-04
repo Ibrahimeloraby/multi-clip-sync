@@ -5,6 +5,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import VideoTrimmer from "./VideoTrimmer";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { useMediaCleanup } from "@/hooks/useMediaCleanup";
 
 interface VideoUploadProps {
   sessionId: string;
@@ -26,13 +28,27 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment'); // Default to back camera
   const [showTrimmer, setShowTrimmer] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // GPS and media cleanup hooks
+  const { getLocationSilently, checkPermission, permissionStatus } = useGeolocation({
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 60000,
+    askPermission: false,
+  });
+  const { trackObjectUrl, trackMediaStream, cleanup: cleanupMedia } = useMediaCleanup();
+
+  // Pre-check geolocation permission on mount
+  useEffect(() => {
+    checkPermission();
+  }, [checkPermission]);
 
   const uploadFile = useCallback(async (file: Blob, fileName: string) => {
     try {
@@ -81,20 +97,23 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
         return;
       }
 
-      // Get user location if available
+      // Get user location if available (using improved geolocation hook)
       let latitude = null;
       let longitude = null;
-      
-      try {
-        if (navigator.geolocation) {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-          });
-          latitude = position.coords.latitude;
-          longitude = position.coords.longitude;
+
+      // Only attempt to get location if permission was already granted
+      // This prevents blocking the upload with permission prompts
+      if (permissionStatus === 'granted') {
+        try {
+          const coords = await getLocationSilently();
+          if (coords) {
+            latitude = coords.latitude;
+            longitude = coords.longitude;
+          }
+        } catch {
+          // Location not available, continue without it
+          console.log('Location not available, continuing upload without GPS data');
         }
-      } catch {
-        // Location not available, continue without it
       }
 
       setProgress(50);
@@ -223,6 +242,7 @@ const VideoUpload = ({ sessionId, userId, deviceId, maxDuration, onUploadComplet
       });
 
       streamRef.current = stream;
+      trackMediaStream(stream); // Track for proper cleanup
 
       // Set recording state first so the video element renders
       setRecording(true);
