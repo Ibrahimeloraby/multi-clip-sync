@@ -254,7 +254,10 @@ const command = process.argv[2] || 'help';
 const handler = COMMANDS[command as keyof typeof COMMANDS];
 
 if (handler) {
-  handler().catch(console.error);
+  const result = handler();
+  if (result && typeof result.catch === 'function') {
+    result.catch(console.error);
+  }
 } else {
   console.error(`Unknown command: ${command}`);
   showHelp();
