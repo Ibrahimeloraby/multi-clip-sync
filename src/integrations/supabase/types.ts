@@ -195,70 +195,6 @@ export type Database = {
           },
         ]
       }
-      video_comments: {
-        Row: {
-          id: string
-          video_id: string
-          user_id: string
-          content: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          video_id: string
-          user_id: string
-          content: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          video_id?: string
-          user_id?: string
-          content?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "video_comments_video_id_fkey"
-            columns: ["video_id"]
-            isOneToOne: false
-            referencedRelation: "videos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      video_likes: {
-        Row: {
-          id: string
-          video_id: string
-          user_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          video_id: string
-          user_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          video_id?: string
-          user_id?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "video_likes_video_id_fkey"
-            columns: ["video_id"]
-            isOneToOne: false
-            referencedRelation: "videos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       videos: {
         Row: {
           device_id: string
@@ -268,7 +204,6 @@ export type Database = {
           longitude: number | null
           published_at: string | null
           published_to_feed: boolean
-          sequence_order: number
           session_id: string
           storage_path: string
           thumbnail_url: string | null
@@ -283,7 +218,6 @@ export type Database = {
           longitude?: number | null
           published_at?: string | null
           published_to_feed?: boolean
-          sequence_order?: number
           session_id: string
           storage_path: string
           thumbnail_url?: string | null
@@ -298,7 +232,6 @@ export type Database = {
           longitude?: number | null
           published_at?: string | null
           published_to_feed?: boolean
-          sequence_order?: number
           session_id?: string
           storage_path?: string
           thumbnail_url?: string | null
