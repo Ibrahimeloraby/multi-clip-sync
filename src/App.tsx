@@ -8,6 +8,7 @@ import LibraryScreen from "./pages/LibraryScreen";
 import SessionView from "./pages/SessionView";
 import QuickJoin from "./pages/QuickJoin";
 import Install from "./pages/Install";
+import SetupPage from "./pages/SetupPage";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -34,6 +35,7 @@ const App = () => (
 
             {/* Utility routes */}
             <Route path="/install" element={<Install />} />
+            <Route path="/setup" element={<SetupPage />} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

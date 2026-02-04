@@ -10,6 +10,8 @@ on:
 
 env:
   SUPABASE_PROJECT_ID: vhagqzzodmathyfbgjxr
+  SUPABASE_URL: https://vhagqzzodmathyfbgjxr.supabase.co
+  VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZoYWdxenpvZG1hdGh5ZmJnanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NDI4MzIsImV4cCI6MjA3NjAxODgzMn0.iHQqNiz0MJIjG_4dk7B0Xlrjn0M01QSkxGaIq48HPiA
 
 jobs:
   migrate:
@@ -71,8 +73,8 @@ jobs:
       - name: Build application
         run: npm run build
         env:
-          VITE_SUPABASE_URL: https://${{ env.SUPABASE_PROJECT_ID }}.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.VITE_SUPABASE_ANON_KEY }}
           VITE_SUPABASE_PROJECT_ID: ${{ env.SUPABASE_PROJECT_ID }}
 
       - name: Upload build artifacts
@@ -92,11 +94,12 @@ jobs:
         run: |
           echo "❌ Migration failed - likely missing GitHub Secrets"
           echo ""
-          echo "Please add these secrets to your repository:"
+          echo "Please add these 2 secrets to your repository:"
           echo "  Settings → Secrets and variables → Actions → New repository secret"
           echo ""
-          echo "Required secrets:"
-          echo "  SUPABASE_ACCESS_TOKEN - Get from https://supabase.com/dashboard/account/tokens"
-          echo "  SUPABASE_DB_PASSWORD - Get from Project Settings → Database → Database password"
-          echo "  VITE_SUPABASE_PUBLISHABLE_KEY - Your Supabase anon key"
+          echo "Required secrets (only 2 needed!):"
+          echo "  1. SUPABASE_ACCESS_TOKEN - Get from https://supabase.com/dashboard/account/tokens"
+          echo "  2. SUPABASE_DB_PASSWORD - Get from Project Settings → Database → Database password"
+          echo ""
+          echo "Or visit /setup in your deployed app for a one-click alternative!"
           exit 1
