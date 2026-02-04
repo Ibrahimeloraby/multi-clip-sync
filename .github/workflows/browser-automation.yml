@@ -35,7 +35,7 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Run automation
-        run: npx ts-node automation/run.ts ${{ github.event.inputs.action }}
+        run: npx tsx automation/run.ts ${{ github.event.inputs.action }}
         env:
           SUPABASE_EMAIL: ${{ secrets.SUPABASE_EMAIL }}
           SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
