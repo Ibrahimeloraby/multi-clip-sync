@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Automation screenshots
+automation/screenshots/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
