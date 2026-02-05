@@ -750,96 +750,9 @@ const LibraryScreen = () => {
           </div>
         )}
 
-        {/* Feed Tab */}
+        {/* Feed Tab - Using EnhancedFeedTab with full social features */}
         {activeTab === 'feed' && (
-          <div className="h-full bg-black">
-            {feedLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-8 h-8 animate-spin text-white" />
-              </div>
-            ) : feedVideos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full px-4">
-                <div className="w-16 h-16 rounded-full bg-library-surface border-2 border-library-accent flex items-center justify-center mb-4">
-                  <Play className="w-8 h-8 text-library-accent" />
-                </div>
-                <h3 className="font-semibold text-library-text mb-1">No videos yet</h3>
-                <p className="text-sm text-library-text-muted text-center">
-                  Be the first to create and share a session!
-                </p>
-              </div>
-            ) : (
-              <div
-                ref={containerRef}
-                className="h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
-                style={{ scrollSnapType: 'y mandatory' }}
-              >
-                {feedVideos.map((video, index) => (
-                  <div
-                    key={video.id}
-                    className="h-full w-full snap-start snap-always relative flex items-center justify-center"
-                  >
-                    <FeedVideoPlayer 
-                      video={video} 
-                      isActive={index === currentIndex && playing}
-                      muted={muted}
-                      onClick={togglePlay}
-                    />
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
-
-                    {!playing && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-20 h-20 rounded-full bg-black/50 flex items-center justify-center">
-                          <Play className="w-10 h-10 text-white ml-1" fill="white" />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="absolute right-4 bottom-32 flex flex-col items-center gap-5">
-                      <button className="flex flex-col items-center gap-1 touch-manipulation">
-                        <div className="w-12 h-12 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/50 flex items-center justify-center">
-                          <Heart className="w-6 h-6 text-library-accent" />
-                        </div>
-                        <span className="text-library-accent text-xs font-medium">Like</span>
-                      </button>
-
-                      <button className="flex flex-col items-center gap-1 touch-manipulation">
-                        <div className="w-12 h-12 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/50 flex items-center justify-center">
-                          <MessageCircle className="w-6 h-6 text-library-accent" />
-                        </div>
-                        <span className="text-library-accent text-xs font-medium">Comment</span>
-                      </button>
-
-                      <button 
-                        onClick={() => handleFeedShare(video)}
-                        className="flex flex-col items-center gap-1 touch-manipulation"
-                      >
-                        <div className="w-12 h-12 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/50 flex items-center justify-center">
-                          <Share2 className="w-6 h-6 text-library-accent" />
-                        </div>
-                        <span className="text-library-accent text-xs font-medium">Share</span>
-                      </button>
-
-                      <button 
-                        onClick={toggleMute}
-                        className="flex flex-col items-center gap-1 touch-manipulation"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-library-surface/80 backdrop-blur-sm border border-library-accent/50 flex items-center justify-center">
-                          {muted ? <VolumeX className="w-5 h-5 text-library-accent" /> : <Volume2 className="w-5 h-5 text-library-accent" />}
-                        </div>
-                      </button>
-                    </div>
-
-                    <div className="absolute left-4 right-20 bottom-24 safe-area-pb">
-                      <p className="text-library-accent font-bold text-lg mb-1">@{video.creator_name}</p>
-                      <p className="text-library-text text-sm">{video.session_name}</p>
-                      <p className="text-library-text-muted text-xs mt-1">{video.duration}s • {new Date(video.uploaded_at).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <EnhancedFeedTab />
         )}
       </div>
 
