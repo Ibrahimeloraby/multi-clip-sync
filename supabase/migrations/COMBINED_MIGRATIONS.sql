@@ -3,7 +3,7 @@
 -- ============================================
 --
 -- Run this entire file in Supabase SQL Editor:
--- 1. Go to https://supabase.com/dashboard/project/vhagqzzodmathyfbgjxr
+-- 1. Go to https://supabase.com/dashboard/project/dtkfcnlxkshrflujtsaj
 -- 2. Click "SQL Editor" in the left sidebar
 -- 3. Click "New query"
 -- 4. Paste this entire file

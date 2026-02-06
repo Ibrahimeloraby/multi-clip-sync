@@ -19,7 +19,7 @@ import * as path from 'path';
 
 export class SupabaseAutomation extends BrowserAutomation {
   private baseUrl = 'https://supabase.com';
-  private projectId = 'vhagqzzodmathyfbgjxr';
+  private projectId = 'dtkfcnlxkshrflujtsaj';
 
   async login(): Promise<boolean> {
     const email = this.getCredential('supabase_email') || this.getCredential('email');

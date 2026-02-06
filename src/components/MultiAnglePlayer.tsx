@@ -150,7 +150,7 @@ const MultiAnglePlayer = ({ videos, onClose }: MultiAnglePlayerProps) => {
 
   // Get video URL from storage path
   const getVideoUrl = (storagePath: string) => {
-    return `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${storagePath}`;
+    return `https://dtkfcnlxkshrflujtsaj.supabase.co/storage/v1/object/public/videos/${storagePath}`;
   };
 
   // Grid layout calculations

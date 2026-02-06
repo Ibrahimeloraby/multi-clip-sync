@@ -769,7 +769,7 @@ const SessionView = () => {
           <div className="aspect-video">
             {playingVideo && (
               <video
-                src={`https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`}
+                src={`https://dtkfcnlxkshrflujtsaj.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`}
                 controls
                 autoPlay
                 playsInline
@@ -792,7 +792,7 @@ const SessionView = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
+                      const url = `https://dtkfcnlxkshrflujtsaj.supabase.co/storage/v1/object/public/videos/${playingVideo.storage_path}`;
                       const link = document.createElement('a');
                       link.href = url;
                       link.download = `timecode-${playingVideo.profiles?.username || 'video'}-${playingVideo.id.slice(0, 8)}.mp4`;
@@ -830,7 +830,7 @@ const SessionView = () => {
         <VideoShareModal
           open={!!sharingVideo}
           onOpenChange={(open) => !open && setSharingVideo(null)}
-          videoUrl={`https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${sharingVideo.storage_path}`}
+          videoUrl={`https://dtkfcnlxkshrflujtsaj.supabase.co/storage/v1/object/public/videos/${sharingVideo.storage_path}`}
           videoName={`timecode-${sharingVideo.profiles?.username || 'video'}-${sharingVideo.id.slice(0, 8)}`}
           sessionName={session.name}
         />

@@ -9,9 +9,10 @@ on:
   workflow_dispatch:
 
 env:
-  SUPABASE_PROJECT_ID: vhagqzzodmathyfbgjxr
-  SUPABASE_URL: https://vhagqzzodmathyfbgjxr.supabase.co
-  VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZoYWdxenpvZG1hdGh5ZmJnanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NDI4MzIsImV4cCI6MjA3NjAxODgzMn0.iHQqNiz0MJIjG_4dk7B0Xlrjn0M01QSkxGaIq48HPiA
+  SUPABASE_PROJECT_ID: dtkfcnlxkshrflujtsaj
+  SUPABASE_URL: https://dtkfcnlxkshrflujtsaj.supabase.co
+  # IMPORTANT: Update this with your anon key from Supabase dashboard
+  VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
 jobs:
   build-and-migrate:

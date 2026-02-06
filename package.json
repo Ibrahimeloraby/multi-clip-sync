@@ -13,7 +13,7 @@
     "db:migrate:sql": "cat supabase/migrations/COMBINED_MIGRATIONS.sql",
     "db:migrate:psql": "psql $DATABASE_URL -f supabase/migrations/COMBINED_MIGRATIONS.sql",
     "setup:secrets": "bash scripts/setup-github-secrets.sh",
-    "supabase:link": "npx supabase link --project-ref vhagqzzodmathyfbgjxr",
+    "supabase:link": "npx supabase link --project-ref dtkfcnlxkshrflujtsaj",
     "supabase:push": "npx supabase db push",
     "automate": "npx tsx automation/run.ts",
     "automate:supabase": "npx tsx automation/run.ts supabase:migrate",

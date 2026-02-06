@@ -13,7 +13,7 @@
 
 import { Client } from 'pg';
 
-const PROJECT_REF = 'vhagqzzodmathyfbgjxr';
+const PROJECT_REF = 'dtkfcnlxkshrflujtsaj';
 
 const MIGRATIONS_SQL = `
 -- ============================================
