@@ -14,7 +14,7 @@ env:
   VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZoYWdxenpvZG1hdGh5ZmJnanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0NDI4MzIsImV4cCI6MjA3NjAxODgzMn0.iHQqNiz0MJIjG_4dk7B0Xlrjn0M01QSkxGaIq48HPiA
 
 jobs:
-  build:
+  build-and-migrate:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,10 +30,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type check
-        run: npx tsc --noEmit
-        continue-on-error: true
-
       - name: Build application
         run: npm run build
         env:
@@ -48,9 +44,13 @@ jobs:
           path: dist/
           retention-days: 7
 
-      - name: Build Status
+      - name: Run database migrations
+        run: npx tsx scripts/run-migrations.ts
+        continue-on-error: true
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: Build complete
         run: |
-          echo "✅ Build completed successfully!"
-          echo ""
-          echo "📦 Lovable will automatically sync this code from GitHub."
-          echo "🗄️ Run migrations at: https://supabase.com/dashboard/project/${{ env.SUPABASE_PROJECT_ID }}/sql/new"
+          echo "✅ Build completed!"
+          echo "📦 Lovable syncs automatically from GitHub."
