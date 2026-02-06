@@ -30,6 +30,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Type check
+        run: npx tsc --noEmit
+        continue-on-error: true
+
       - name: Build application
         run: npm run build
         env:
@@ -44,48 +48,9 @@ jobs:
           path: dist/
           retention-days: 7
 
-  # Full automation: Supabase migrations + Lovable deployment
-  automate:
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
-
-      - name: Run Supabase Migrations via SQL Editor
-        run: npx tsx automation/run.ts supabase:migrate
-        env:
-          SUPABASE_EMAIL: ${{ secrets.SUPABASE_EMAIL }}
-          SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
-        continue-on-error: true
-
-      - name: Sync to Lovable
-        run: npx tsx automation/run.ts lovable:deploy
-        env:
-          LOVABLE_EMAIL: ${{ secrets.LOVABLE_EMAIL }}
-          LOVABLE_PASSWORD: ${{ secrets.LOVABLE_PASSWORD }}
-        continue-on-error: true
-
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: automation-screenshots
-          path: automation/screenshots/
-          retention-days: 7
-
-      - name: Automation Status
-        run: echo "✅ Supabase migrations and Lovable sync completed!"
+      - name: Build Status
+        run: |
+          echo "✅ Build completed successfully!"
+          echo ""
+          echo "📦 Lovable will automatically sync this code from GitHub."
+          echo "🗄️ Run migrations at: https://supabase.com/dashboard/project/${{ env.SUPABASE_PROJECT_ID }}/sql/new"
