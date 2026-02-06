@@ -44,11 +44,11 @@ jobs:
           path: dist/
           retention-days: 7
 
-      - name: Run database migrations
+      - name: Run database setup
         run: npx tsx scripts/run-migrations.ts
         continue-on-error: true
         env:
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD || secrets.SUPABASE_PASSWORD }}
 
       - name: Build complete
         run: |
