@@ -870,7 +870,7 @@ const CameraScreen = () => {
 
         {/* Recording indicator */}
         {recording && (
-          <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive text-white px-3 py-1.5 rounded-full text-sm font-medium safe-area-mt">
+          <div className="absolute top-4 left-4 flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-full text-sm font-medium safe-area-mt">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
             REC {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
           </div>
@@ -987,9 +987,9 @@ const CameraScreen = () => {
             >
               <div className="w-[76px] h-[76px] rounded-full border-4 border-white flex items-center justify-center shadow-lg">
                 {recording ? (
-                  <div className="w-8 h-8 rounded-md bg-destructive" />
+                  <div className="w-8 h-8 rounded-md bg-blue-500" />
                 ) : (
-                  <div className="w-[60px] h-[60px] rounded-full bg-destructive" />
+                  <div className="w-[60px] h-[60px] rounded-full bg-blue-500" />
                 )}
               </div>
             </button>

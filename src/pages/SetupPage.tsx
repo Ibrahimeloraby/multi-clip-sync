@@ -116,7 +116,7 @@ export default function SetupPage() {
   };
 
   const openSupabaseSQL = () => {
-    window.open('https://supabase.com/dashboard/project/vhagqzzodmathyfbgjxr/sql/new', '_blank');
+    window.open('https://supabase.com/dashboard/project/dtkfcnlxkshrflujtsaj/sql/new', '_blank');
   };
 
   const runMigrationsOneClick = async () => {

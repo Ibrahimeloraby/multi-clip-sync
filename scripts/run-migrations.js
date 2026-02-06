@@ -15,7 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 
-const PROJECT_ID = 'vhagqzzodmathyfbgjxr';
+const PROJECT_ID = 'dtkfcnlxkshrflujtsaj';
 
 // Migration files to run (in order)
 const MIGRATIONS = [

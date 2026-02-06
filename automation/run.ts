@@ -31,30 +31,38 @@ const COMMANDS = {
 
 async function runSupabaseLogin() {
   const supabase = new SupabaseAutomation();
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
   try {
-    await supabase.launch(false); // headless=false to see the browser
+    await supabase.launch(isCI);
     const success = await supabase.login();
     if (success) {
       await supabase.openProject();
+      console.log('✅ Login successful!');
     }
-    // Keep browser open for inspection
-    console.log('\n📌 Browser will stay open. Press Ctrl+C to close.\n');
-    await new Promise(() => {}); // Keep running
+
+    if (isCI) {
+      await supabase.close();
+    } else {
+      console.log('\n📌 Browser will stay open. Press Ctrl+C to close.\n');
+      await new Promise(() => {}); // Keep running for interactive mode
+    }
   } catch (error) {
     console.error('Error:', error);
     await supabase.close();
+    process.exit(1);
   }
 }
 
 async function runSupabaseMigrate() {
   const supabase = new SupabaseAutomation();
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
   try {
-    await supabase.launch(false);
+    await supabase.launch(isCI); // headless in CI
     const loginSuccess = await supabase.login();
     if (!loginSuccess) {
       console.error('❌ Cannot run migrations without logging in');
       await supabase.close();
-      return;
+      process.exit(1);
     }
 
     const migrateSuccess = await supabase.runMigrations();
@@ -64,12 +72,15 @@ async function runSupabaseMigrate() {
       console.error('\n❌ Migrations failed\n');
     }
 
-    // Keep browser open for inspection
-    console.log('📌 Browser will stay open. Press Ctrl+C to close.\n');
-    await new Promise(() => {});
+    await supabase.close();
+
+    if (!isCI) {
+      console.log('📌 Done! Browser closed.\n');
+    }
   } catch (error) {
     console.error('Error:', error);
     await supabase.close();
+    process.exit(1);
   }
 }
 
@@ -117,25 +128,33 @@ async function runSupabaseGetSecrets() {
 
 async function runLovableLogin() {
   const lovable = new LovableAutomation();
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
   try {
-    await lovable.launch(false);
+    await lovable.launch(isCI);
     const success = await lovable.login();
     if (success) {
       const projects = await lovable.listProjects();
       console.log('\nProjects:', projects);
     }
-    console.log('\n📌 Browser will stay open. Press Ctrl+C to close.\n');
-    await new Promise(() => {});
+
+    if (isCI) {
+      await lovable.close();
+    } else {
+      console.log('\n📌 Browser will stay open. Press Ctrl+C to close.\n');
+      await new Promise(() => {});
+    }
   } catch (error) {
     console.error('Error:', error);
     await lovable.close();
+    process.exit(1);
   }
 }
 
 async function runLovableListProjects() {
   const lovable = new LovableAutomation();
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
   try {
-    await lovable.launch(false);
+    await lovable.launch(isCI);
     const success = await lovable.login();
     if (success) {
       const projects = await lovable.listProjects();
@@ -146,17 +165,19 @@ async function runLovableListProjects() {
   } catch (error) {
     console.error('Error:', error);
     await lovable.close();
+    process.exit(1);
   }
 }
 
 async function runLovableDeploy() {
   const lovable = new LovableAutomation();
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
   try {
-    await lovable.launch(false);
+    await lovable.launch(isCI);
     const loginSuccess = await lovable.login();
     if (!loginSuccess) {
       await lovable.close();
-      return;
+      process.exit(1);
     }
 
     // Open the project (you may need to specify which one)
@@ -173,17 +194,19 @@ async function runLovableDeploy() {
   } catch (error) {
     console.error('Error:', error);
     await lovable.close();
+    process.exit(1);
   }
 }
 
 async function runAll() {
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
   console.log('🚀 Running full automation setup...\n');
 
   // Step 1: Run Supabase migrations
   console.log('Step 1: Running Supabase migrations...');
   const supabase = new SupabaseAutomation();
   try {
-    await supabase.launch(false);
+    await supabase.launch(isCI);
     const loginSuccess = await supabase.login();
     if (loginSuccess) {
       await supabase.runMigrations();
@@ -198,7 +221,7 @@ async function runAll() {
   console.log('\nStep 2: Deploying to Lovable...');
   const lovable = new LovableAutomation();
   try {
-    await lovable.launch(false);
+    await lovable.launch(isCI);
     const loginSuccess = await lovable.login();
     if (loginSuccess) {
       await lovable.openProject('multi-clip-sync');

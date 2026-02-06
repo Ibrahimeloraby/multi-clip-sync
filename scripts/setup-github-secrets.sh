@@ -18,10 +18,10 @@ if ! command -v gh &> /dev/null; then
     echo "  Repository → Settings → Secrets and variables → Actions"
     echo ""
     echo "Required secrets:"
-    echo "  - SUPABASE_PROJECT_ID: vhagqzzodmathyfbgjxr"
+    echo "  - SUPABASE_PROJECT_ID: dtkfcnlxkshrflujtsaj"
     echo "  - SUPABASE_ACCESS_TOKEN: (from https://supabase.com/dashboard/account/tokens)"
     echo "  - SUPABASE_DB_PASSWORD: (from Project Settings → Database)"
-    echo "  - VITE_SUPABASE_URL: https://vhagqzzodmathyfbgjxr.supabase.co"
+    echo "  - VITE_SUPABASE_URL: https://dtkfcnlxkshrflujtsaj.supabase.co"
     echo "  - VITE_SUPABASE_PUBLISHABLE_KEY: (your anon key)"
     exit 1
 fi
@@ -45,10 +45,10 @@ echo ""
 
 # Set known values
 echo "Setting SUPABASE_PROJECT_ID..."
-gh secret set SUPABASE_PROJECT_ID -b "vhagqzzodmathyfbgjxr" --repo "$REPO"
+gh secret set SUPABASE_PROJECT_ID -b "dtkfcnlxkshrflujtsaj" --repo "$REPO"
 
 echo "Setting VITE_SUPABASE_URL..."
-gh secret set VITE_SUPABASE_URL -b "https://vhagqzzodmathyfbgjxr.supabase.co" --repo "$REPO"
+gh secret set VITE_SUPABASE_URL -b "https://dtkfcnlxkshrflujtsaj.supabase.co" --repo "$REPO"
 
 # Prompt for values that need to be entered
 echo ""

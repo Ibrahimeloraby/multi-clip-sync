@@ -80,7 +80,7 @@ const ExportModal = ({
   };
 
   const downloadVideo = async (video: VideoItem, index: number) => {
-    const url = `https://vhagqzzodmathyfbgjxr.supabase.co/storage/v1/object/public/videos/${video.storage_path}`;
+    const url = `https://dtkfcnlxkshrflujtsaj.supabase.co/storage/v1/object/public/videos/${video.storage_path}`;
     const filename = `${sessionName}-clip-${index + 1}-${video.profiles?.username || 'unknown'}.mp4`;
     
     setDownloadProgress(prev => ({ ...prev, [video.id]: 10 }));
