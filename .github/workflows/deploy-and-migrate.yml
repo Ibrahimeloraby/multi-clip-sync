@@ -11,8 +11,7 @@ on:
 env:
   SUPABASE_PROJECT_ID: dtkfcnlxkshrflujtsaj
   SUPABASE_URL: https://dtkfcnlxkshrflujtsaj.supabase.co
-  # IMPORTANT: Update this with your anon key from Supabase dashboard
-  VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+  VITE_SUPABASE_ANON_KEY: sb_publishable_1ykGt2WJ2uJqsL_tlAf4Dg_KnJ_NblN
 
 jobs:
   build-and-migrate:
