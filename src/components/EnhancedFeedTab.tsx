@@ -43,6 +43,7 @@ const EnhancedFeedTab = ({ currentUserId }: EnhancedFeedTabProps) => {
   const fetchFeedData = async () => {
     setLoading(true);
     try {
+      // First, try to get videos - this is the core query
       const { data: videosData, error } = await supabase
         .from('videos')
         .select('id, storage_path, thumbnail_url, duration, uploaded_at, session_id, user_id')
@@ -50,59 +51,63 @@ const EnhancedFeedTab = ({ currentUserId }: EnhancedFeedTabProps) => {
         .order('published_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Videos query error:', error);
+        throw error;
+      }
 
-      const sessionIds = [...new Set((videosData || []).map(v => v.session_id))];
-      const userIds = [...new Set((videosData || []).map(v => v.user_id))];
+      // If no videos, just set empty and return
+      if (!videosData || videosData.length === 0) {
+        setFeedVideos([]);
+        return;
+      }
 
-      const [sessionsResult, profilesResult, likesResult] = await Promise.all([
+      const sessionIds = [...new Set(videosData.map(v => v.session_id))];
+      const userIds = [...new Set(videosData.map(v => v.user_id))];
+      const videoIds = videosData.map(v => v.id);
+
+      // Fetch sessions and profiles (these should always work)
+      const [sessionsResult, profilesResult] = await Promise.all([
         sessionIds.length > 0
           ? supabase.from('sessions').select('id, name').in('id', sessionIds)
-          : { data: [] },
+          : { data: [], error: null },
         userIds.length > 0
           ? supabase.from('profiles').select('id, username').in('id', userIds)
-          : { data: [] },
-        currentUserId && videosData
-          ? supabase
-              .from('video_likes')
-              .select('video_id')
-              .eq('user_id', currentUserId)
-              .in('video_id', videosData.map(v => v.id))
-          : { data: [] },
+          : { data: [], error: null },
       ]);
 
       const sessionsMap = new Map((sessionsResult.data || []).map(s => [s.id, s.name]));
       const profilesMap = new Map((profilesResult.data || []).map(p => [p.id, p.username]));
-      const likedVideoIds = new Set((likesResult.data || []).map(l => l.video_id));
 
-      // Fetch counts
-      const videoIds = (videosData || []).map(v => v.id);
-      const [likesCountResult, commentsCountResult] = await Promise.all([
-        videoIds.length > 0
-          ? supabase
-              .from('video_likes')
-              .select('video_id')
-              .in('video_id', videoIds)
-          : { data: [] },
-        videoIds.length > 0
-          ? supabase
-              .from('video_comments')
-              .select('video_id')
-              .in('video_id', videoIds)
-          : { data: [] },
-      ]);
+      // Try to fetch likes/comments - these might fail if tables don't exist or RLS blocks
+      let likedVideoIds = new Set<string>();
+      let likesCountMap = new Map<string, number>();
+      let commentsCountMap = new Map<string, number>();
 
-      const likesCountMap = new Map<string, number>();
-      (likesCountResult.data || []).forEach(l => {
-        likesCountMap.set(l.video_id, (likesCountMap.get(l.video_id) || 0) + 1);
-      });
+      try {
+        const [likesResult, likesCountResult, commentsCountResult] = await Promise.all([
+          currentUserId
+            ? supabase.from('video_likes').select('video_id').eq('user_id', currentUserId).in('video_id', videoIds)
+            : { data: [], error: null },
+          supabase.from('video_likes').select('video_id').in('video_id', videoIds),
+          supabase.from('video_comments').select('video_id').in('video_id', videoIds),
+        ]);
 
-      const commentsCountMap = new Map<string, number>();
-      (commentsCountResult.data || []).forEach(c => {
-        commentsCountMap.set(c.video_id, (commentsCountMap.get(c.video_id) || 0) + 1);
-      });
+        likedVideoIds = new Set((likesResult.data || []).map(l => l.video_id));
 
-      const formattedVideos: FeedVideo[] = (videosData || []).map((v: any) => ({
+        (likesCountResult.data || []).forEach(l => {
+          likesCountMap.set(l.video_id, (likesCountMap.get(l.video_id) || 0) + 1);
+        });
+
+        (commentsCountResult.data || []).forEach(c => {
+          commentsCountMap.set(c.video_id, (commentsCountMap.get(c.video_id) || 0) + 1);
+        });
+      } catch (socialError) {
+        // Social features failed, but we can still show videos
+        console.warn('Social features unavailable:', socialError);
+      }
+
+      const formattedVideos: FeedVideo[] = videosData.map((v: any) => ({
         id: v.id,
         storage_path: v.storage_path,
         thumbnail_url: v.thumbnail_url,
@@ -118,9 +123,9 @@ const EnhancedFeedTab = ({ currentUserId }: EnhancedFeedTabProps) => {
       }));
 
       setFeedVideos(formattedVideos);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching feed:', error);
-      toast.error('Failed to load feed');
+      toast.error(error?.message || 'Failed to load feed');
     } finally {
       setLoading(false);
     }
