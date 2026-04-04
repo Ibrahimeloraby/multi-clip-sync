@@ -15,6 +15,18 @@ dist-ssr
 # Automation screenshots
 automation/screenshots/
 
+# APEX.AI — never commit secrets or trade data
+apex/.env
+apex/trades.jsonl
+apex/logs/
+apex/**/__pycache__/
+apex/**/*.pyc
+apex/.pytest_cache/
+
+# Dashboard local env
+apex-dashboard/.env.local
+apex-dashboard/.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
