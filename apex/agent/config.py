@@ -43,6 +43,19 @@ class Settings(BaseSettings):
     max_drawdown_pct: float = 0.10         # hard stop at 10% drawdown
     min_sentiment_confidence: float = 0.60 # skip signals below this threshold
 
+    # ── Safety ───────────────────────────────────────────────────────
+    # DRY_RUN=true  → full pipeline runs but NO orders are submitted to IBKR.
+    # All signals, risk checks, and sizing are logged as if real.
+    # Set to false only when you are ready to trade real/paper money.
+    dry_run: bool = True
+
+    # Stop-loss / take-profit (applied to every bracket order)
+    stop_loss_pct: float = 0.02       # 2% below entry → stop
+    take_profit_pct: float = 0.04     # 4% above entry → limit sell (2:1 R:R)
+
+    # Allow opening short positions (SELL with no existing long)
+    allow_shorting: bool = False
+
     # ── Agent loop ───────────────────────────────────────────────────
     loop_interval_seconds: int = 60
 

@@ -50,9 +50,12 @@ export function TradeLog({ trades }: TradeLogProps) {
                 return (
                   <tr key={t.order_id} className="border-b border-apex-border/30 hover:bg-apex-muted/20 transition-colors">
                     <td className="py-1.5 pr-3 text-apex-subtext">{time}</td>
-                    <td className="pr-3 text-apex-accent font-semibold">{t.symbol}</td>
+                    <td className="pr-3 text-apex-accent font-semibold">
+                      {t.symbol}
+                      {t.dry_run && <span className="ml-1 text-[8px] text-apex-yellow border border-apex-yellow/40 rounded px-1">DRY</span>}
+                    </td>
                     <td className={`pr-3 font-semibold ${t.action === "BUY" ? "text-apex-green" : "text-apex-red"}`}>
-                      {t.action}
+                      {t.action}{t.is_closing && <span className="ml-1 text-[9px] text-apex-subtext">CLOSE</span>}
                     </td>
                     <td className="text-right pr-3 text-apex-text">{t.quantity}</td>
                     <td className="text-right pr-3 text-apex-text">

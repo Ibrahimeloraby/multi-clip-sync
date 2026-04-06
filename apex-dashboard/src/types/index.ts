@@ -66,6 +66,8 @@ export interface Trade {
   quantity: number;
   order_type: string;
   status: string;
+  dry_run: boolean;
+  is_closing: boolean;
   submitted_at: string;
   fill_price: number | null;
 }

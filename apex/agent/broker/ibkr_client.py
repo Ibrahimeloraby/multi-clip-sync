@@ -11,7 +11,7 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from ib_insync import IB, Contract, Position, Stock, AccountValue
+from ib_async import IB, Contract, Position, Stock, AccountValue
 from loguru import logger
 
 from agent.config import settings
