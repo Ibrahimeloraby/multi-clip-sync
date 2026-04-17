@@ -87,19 +87,12 @@ class Settings(BaseSettings):
         return v
 
     @classmethod
-    def settings_customise_sources(
-        cls,
-        settings_cls: Type[BaseSettings],
-        init_settings,
-        env_settings,
-        dotenv_settings,
-        secrets_settings,
-    ):
+    def settings_customise_sources(cls, settings_cls: Type[BaseSettings], **kwargs):
         return (
-            init_settings,
+            kwargs["init_settings"],
             _FlexEnvSource(settings_cls),
             _FlexDotEnvSource(settings_cls, env_file=".env", env_file_encoding="utf-8"),
-            secrets_settings,
+            kwargs.get("file_secret_settings", kwargs.get("secrets_settings")),
         )
 
 
