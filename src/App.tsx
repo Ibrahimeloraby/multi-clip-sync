@@ -11,6 +11,7 @@ import Install from "./pages/Install";
 import SetupPage from "./pages/SetupPage";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
+import DiscoverPage from "./pages/DiscoverPage";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,9 @@ const App = () => (
             {/* Main 2-screen app */}
             <Route path="/" element={<CameraScreen />} />
             <Route path="/videos" element={<LibraryScreen />} />
+
+            {/* MoodMatch agent */}
+            <Route path="/discover" element={<DiscoverPage />} />
 
             {/* Redirect old routes */}
             <Route path="/feed" element={<Navigate to="/videos?tab=feed" replace />} />

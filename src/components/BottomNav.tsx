@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Camera, Film, Play } from "lucide-react";
+import { Camera, Film, Play, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const BottomNav = () => {
@@ -9,6 +9,7 @@ const BottomNav = () => {
   const tabs = [
     { path: "/", icon: Camera, label: "Camera" },
     { path: "/videos", icon: Film, label: "Videos" },
+    { path: "/discover", icon: Sparkles, label: "Discover" },
     { path: "/feed", icon: Play, label: "Feed" },
   ];
 
