@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 import pandas as pd
-from ib_insync import IB, BarData
+from ib_async import IB, BarData
 from loguru import logger
 
 from agent.broker.ibkr_client import IBKRClient
