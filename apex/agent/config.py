@@ -5,9 +5,25 @@ All modules import `settings` from here; never read os.environ directly.
 
 from __future__ import annotations
 
-from typing import List
+from typing import Any, List, Type
 from pydantic import field_validator
+from pydantic.fields import FieldInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings.sources import DotEnvSettingsSource, EnvSettingsSource
+
+
+class _FlexEnvSource(EnvSettingsSource):
+    def prepare_field_value(self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool) -> Any:
+        if isinstance(value, str) and value_is_complex and not value.strip().startswith(("[", "{")):
+            return value
+        return super().prepare_field_value(field_name, field, value, value_is_complex)
+
+
+class _FlexDotEnvSource(DotEnvSettingsSource):
+    def prepare_field_value(self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool) -> Any:
+        if isinstance(value, str) and value_is_complex and not value.strip().startswith(("[", "{")):
+            return value
+        return super().prepare_field_value(field_name, field, value, value_is_complex)
 
 
 class Settings(BaseSettings):
@@ -69,6 +85,22 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [s.strip().upper() for s in v.split(",") if s.strip()]
         return v
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: Type[BaseSettings],
+        init_settings,
+        env_settings,
+        dotenv_settings,
+        secrets_settings,
+    ):
+        return (
+            init_settings,
+            _FlexEnvSource(settings_cls),
+            _FlexDotEnvSource(settings_cls, env_file=".env", env_file_encoding="utf-8"),
+            secrets_settings,
+        )
 
 
 settings = Settings()
