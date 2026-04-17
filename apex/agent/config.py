@@ -5,95 +5,77 @@ All modules import `settings` from here; never read os.environ directly.
 
 from __future__ import annotations
 
-from typing import Any, List, Type
-from pydantic import field_validator
-from pydantic.fields import FieldInfo
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic_settings.sources import DotEnvSettingsSource, EnvSettingsSource
+import os
+from pathlib import Path
+from typing import List
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 
-class _FlexEnvSource(EnvSettingsSource):
-    def prepare_field_value(self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool) -> Any:
-        if isinstance(value, str) and value_is_complex and not value.strip().startswith(("[", "{")):
-            return value
-        return super().prepare_field_value(field_name, field, value, value_is_complex)
+def _parse_symbols() -> List[str]:
+    raw = os.getenv("SYMBOLS", "AAPL,TSLA,NVDA,MSFT,AMZN,GOOGL")
+    return [s.strip().upper() for s in raw.split(",") if s.strip()]
 
 
-class _FlexDotEnvSource(DotEnvSettingsSource):
-    def prepare_field_value(self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool) -> Any:
-        if isinstance(value, str) and value_is_complex and not value.strip().startswith(("[", "{")):
-            return value
-        return super().prepare_field_value(field_name, field, value, value_is_complex)
+def _getbool(key: str, default: bool) -> bool:
+    v = os.getenv(key, str(default)).strip().lower()
+    return v in ("1", "true", "yes")
 
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore",
-    )
+def _getfloat(key: str, default: float) -> float:
+    try:
+        return float(os.getenv(key, str(default)))
+    except ValueError:
+        return default
 
+
+def _getint(key: str, default: int) -> int:
+    try:
+        return int(os.getenv(key, str(default)))
+    except ValueError:
+        return default
+
+
+class Settings:
     # ── Anthropic ─────────────────────────────────────────────────────
-    anthropic_api_key: str
+    anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
 
     # ── IBKR ─────────────────────────────────────────────────────────
-    ibkr_host: str = "127.0.0.1"
-    ibkr_port: int = 4002          # 4002 = IB Gateway live; 7497 = TWS paper
-    ibkr_client_id: int = 1
+    ibkr_host: str = os.getenv("IBKR_HOST", "127.0.0.1")
+    ibkr_port: int = _getint("IBKR_PORT", 4002)
+    ibkr_client_id: int = _getint("IBKR_CLIENT_ID", 1)
 
     # ── Social / News APIs ───────────────────────────────────────────
-    twitter_bearer_token: str = ""
-    reddit_client_id: str = ""
-    reddit_client_secret: str = ""
-    reddit_user_agent: str = "APEX.AI/1.0"
-    news_api_key: str = ""
+    twitter_bearer_token: str = os.getenv("TWITTER_BEARER_TOKEN", "")
+    reddit_client_id: str = os.getenv("REDDIT_CLIENT_ID", "")
+    reddit_client_secret: str = os.getenv("REDDIT_CLIENT_SECRET", "")
+    reddit_user_agent: str = os.getenv("REDDIT_USER_AGENT", "APEX.AI/1.0")
+    news_api_key: str = os.getenv("NEWS_API_KEY", "")
 
     # ── Trading universe ─────────────────────────────────────────────
-    symbols: List[str] = ["AAPL", "TSLA", "NVDA", "MSFT", "AMZN", "GOOGL"]
-    account_currency: str = "AED"
+    symbols: List[str] = _parse_symbols()
+    account_currency: str = os.getenv("ACCOUNT_CURRENCY", "AED")
 
     # ── Risk parameters ──────────────────────────────────────────────
-    max_position_size_pct: float = 0.05    # 5% of portfolio per symbol
-    max_daily_loss_pct: float = 0.02       # halt after 2% daily loss
-    max_drawdown_pct: float = 0.10         # hard stop at 10% drawdown
-    min_sentiment_confidence: float = 0.60 # skip signals below this threshold
+    max_position_size_pct: float = _getfloat("MAX_POSITION_SIZE_PCT", 0.05)
+    max_daily_loss_pct: float = _getfloat("MAX_DAILY_LOSS_PCT", 0.02)
+    max_drawdown_pct: float = _getfloat("MAX_DRAWDOWN_PCT", 0.10)
+    min_sentiment_confidence: float = _getfloat("MIN_SENTIMENT_CONFIDENCE", 0.60)
 
     # ── Safety ───────────────────────────────────────────────────────
-    # DRY_RUN=true  → full pipeline runs but NO orders are submitted to IBKR.
-    # All signals, risk checks, and sizing are logged as if real.
-    # Set to false only when you are ready to trade real/paper money.
-    dry_run: bool = True
-
-    # Stop-loss / take-profit (applied to every bracket order)
-    stop_loss_pct: float = 0.02       # 2% below entry → stop
-    take_profit_pct: float = 0.04     # 4% above entry → limit sell (2:1 R:R)
-
-    # Allow opening short positions (SELL with no existing long)
-    allow_shorting: bool = False
+    dry_run: bool = _getbool("DRY_RUN", True)
+    stop_loss_pct: float = _getfloat("STOP_LOSS_PCT", 0.02)
+    take_profit_pct: float = _getfloat("TAKE_PROFIT_PCT", 0.04)
+    allow_shorting: bool = _getbool("ALLOW_SHORTING", False)
 
     # ── Agent loop ───────────────────────────────────────────────────
-    loop_interval_seconds: int = 60
+    loop_interval_seconds: int = _getint("LOOP_INTERVAL_SECONDS", 60)
 
     # ── WebSocket ────────────────────────────────────────────────────
-    ws_host: str = "0.0.0.0"
-    ws_port: int = 8765
-
-    @field_validator("symbols", mode="before")
-    @classmethod
-    def parse_symbols(cls, v):
-        if isinstance(v, str):
-            return [s.strip().upper() for s in v.split(",") if s.strip()]
-        return v
-
-    @classmethod
-    def settings_customise_sources(cls, settings_cls: Type[BaseSettings], **kwargs):
-        return (
-            kwargs["init_settings"],
-            _FlexEnvSource(settings_cls),
-            _FlexDotEnvSource(settings_cls, env_file=".env", env_file_encoding="utf-8"),
-            kwargs.get("file_secret_settings", kwargs.get("secrets_settings")),
-        )
+    ws_host: str = os.getenv("WS_HOST", "0.0.0.0")
+    ws_port: int = _getint("WS_PORT", 8765)
 
 
 settings = Settings()
