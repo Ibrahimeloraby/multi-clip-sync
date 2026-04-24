@@ -1,53 +1,105 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { BookMarked, Menu, X, Sparkles, Star, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-const Navbar = () => {
+const NAV_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/mood", label: "Mood Finder", icon: Sparkles },
+  { href: "/reviews", label: "Reviews", icon: Star },
+  { href: "/new-releases", label: "New Releases", icon: Flame },
+];
+
+export default function Navbar() {
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            {/* Logo with recording dot */}
-            <div className="relative w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-              {/* Stylized play/record icon */}
-              <svg 
-                viewBox="0 0 24 24" 
-                className="w-5 h-5 text-primary-foreground"
-                fill="currentColor"
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              {/* Recording dot */}
-              <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-destructive border-2 border-background shadow-sm" />
+    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur border-b border-border shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 shrink-0" onClick={() => setOpen(false)}>
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <BookMarked className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground hidden sm:block">
-              Time<span className="gradient-text">Code</span>
-            </span>
+            <div className="flex flex-col leading-none">
+              <span className="font-serif text-lg font-bold text-primary tracking-tight">Bookends</span>
+              <span className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">Pre-Loved Books UAE</span>
+            </div>
           </Link>
-          
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link to="/pricing">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                Pricing
-              </Button>
-            </Link>
-            
-            <Link to="/join">
-              <Button variant="outline" size="sm">
-                Join
-              </Button>
-            </Link>
-            
-            <Link to="/create">
-              <Button size="sm" className="gradient-primary shadow-md hover:shadow-lg transition-shadow">
-                Create Session
-              </Button>
-            </Link>
+
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-1">
+            {NAV_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                to={href}
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  pathname === href
+                    ? "bg-accent/20 text-primary font-semibold"
+                    : "text-muted-foreground hover:text-primary hover:bg-muted"
+                )}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* CTA + hamburger */}
+          <div className="flex items-center gap-2">
+            <Button
+              asChild
+              size="sm"
+              className="hidden md:flex bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <a href="https://bookends.ae/pages/our-services" target="_blank" rel="noopener noreferrer">
+                Sell a Book
+              </a>
+            </Button>
+
+            <button
+              className="md:hidden p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+              onClick={() => setOpen(!open)}
+              aria-label="Toggle menu"
+            >
+              {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       </div>
-    </nav>
-  );
-};
 
-export default Navbar;
+      {/* Mobile menu */}
+      {open && (
+        <div className="md:hidden border-t border-border bg-white">
+          <nav className="px-4 py-3 flex flex-col gap-1">
+            {NAV_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                to={href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                  pathname === href
+                    ? "bg-accent/20 text-primary font-semibold"
+                    : "text-muted-foreground hover:text-primary hover:bg-muted"
+                )}
+              >
+                {label}
+              </Link>
+            ))}
+            <div className="pt-2 border-t border-border mt-1">
+              <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                <a href="https://bookends.ae/pages/our-services" target="_blank" rel="noopener noreferrer">
+                  Sell a Book
+                </a>
+              </Button>
+            </div>
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+}

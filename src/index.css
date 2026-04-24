@@ -1,193 +1,88 @@
 @tailwind base;
-
-/* Safe area insets for notched devices */
-.safe-area-pt {
-  padding-top: env(safe-area-inset-top);
-}
-.safe-area-pb {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.safe-area-mt {
-  margin-top: env(safe-area-inset-top);
-}
-
-/* Hide scrollbar for feed */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Prevent pull-to-refresh and overscroll on camera screen */
-.overscroll-none {
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Better touch handling for buttons */
-.touch-manipulation {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-/* Disable text selection on interactive elements */
-button, [role="button"] {
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system - Light theme with blue gradient and recording red accent */
-
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Warm cream background, espresso text, golden accent */
+    --background: 42 35% 97%;
+    --foreground: 15 50% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 15 50% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 15 50% 10%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 15 47% 14%;
+    --primary-foreground: 42 35% 97%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 38 30% 88%;
+    --secondary-foreground: 15 47% 14%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 40 22% 93%;
+    --muted-foreground: 20 15% 45%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 38 62% 55%;
+    --accent-foreground: 15 47% 14%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
+    --border: 38 22% 86%;
+    --input: 38 22% 86%;
+    --ring: 38 62% 55%;
 
     --radius: 0.75rem;
 
-    /* Recording red accent */
-    --recording: 0 84% 60%;
-    --recording-foreground: 0 0% 100%;
-
-    /* Custom design tokens - Blue gradient theme */
-    --gradient-primary: linear-gradient(135deg, hsl(217, 91%, 60%), hsl(199, 89%, 48%));
-    --gradient-hero: linear-gradient(180deg, hsl(210, 40%, 98%) 0%, hsl(214, 32%, 95%) 100%);
-    --gradient-accent: linear-gradient(90deg, hsl(217, 91%, 60%), hsl(199, 89%, 48%));
-    
-    --glass-bg: hsla(0, 0%, 100%, 0.8);
-    --glass-border: hsla(214, 32%, 91%, 0.8);
-    
-    --shadow-soft: 0 4px 24px hsla(217, 91%, 60%, 0.08);
-    --shadow-elevated: 0 10px 40px hsla(222, 47%, 11%, 0.08);
-    --shadow-glow: 0 0 40px hsla(217, 91%, 60%, 0.15);
-    
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-    /* Yellow/Black Library theme */
-    --library-bg: 0 0% 0%;
-    --library-surface: 0 0% 8%;
-    --library-surface-hover: 0 0% 12%;
-    --library-border: 0 0% 18%;
-    --library-accent: 60 100% 50%;
-    --library-accent-muted: 60 100% 40%;
-    --library-text: 0 0% 100%;
-    --library-text-muted: 0 0% 70%;
+    --sidebar-background: 42 35% 97%;
+    --sidebar-foreground: 15 50% 10%;
+    --sidebar-primary: 15 47% 14%;
+    --sidebar-primary-foreground: 42 35% 97%;
+    --sidebar-accent: 38 30% 88%;
+    --sidebar-accent-foreground: 15 47% 14%;
+    --sidebar-border: 38 22% 86%;
+    --sidebar-ring: 38 62% 55%;
   }
 
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 14%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 14%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 217 33% 20%;
-    --input: 217 33% 20%;
-    --ring: 217 91% 60%;
-    
-    --glass-bg: hsla(222, 47%, 14%, 0.8);
-    --glass-border: hsla(217, 33%, 25%, 0.6);
-    
-    --shadow-soft: 0 4px 24px hsla(0, 0%, 0%, 0.2);
-    --shadow-elevated: 0 10px 40px hsla(0, 0%, 0%, 0.3);
-  }
-}
-
-@layer utilities {
-  .glass-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-  }
-  
-  .gradient-primary {
-    background: var(--gradient-primary);
-  }
-  
-  .gradient-text {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  .hover-lift {
-    transition: var(--transition-smooth);
-  }
-  
-  .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-glow);
-  }
-
-  .recording-dot {
-    @apply w-2 h-2 rounded-full bg-destructive;
-    animation: pulse-recording 1.5s ease-in-out infinite;
-  }
-
-  @keyframes pulse-recording {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.1); }
-  }
-}
-
-@layer base {
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer utilities {
+  .font-serif {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 }

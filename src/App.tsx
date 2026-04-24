@@ -2,15 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import CameraScreen from "./pages/CameraScreen";
-import LibraryScreen from "./pages/LibraryScreen";
-import SessionView from "./pages/SessionView";
-import QuickJoin from "./pages/QuickJoin";
-import Install from "./pages/Install";
-import SetupPage from "./pages/SetupPage";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
+import Home from "./pages/Home";
+import MoodRecommender from "./pages/MoodRecommender";
+import Reviews from "./pages/Reviews";
+import NewReleases from "./pages/NewReleases";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -22,22 +20,10 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Main 2-screen app */}
-            <Route path="/" element={<CameraScreen />} />
-            <Route path="/videos" element={<LibraryScreen />} />
-
-            {/* Redirect old routes */}
-            <Route path="/feed" element={<Navigate to="/videos?tab=feed" replace />} />
-
-            {/* Session routes */}
-            <Route path="/session/:id" element={<SessionView />} />
-            <Route path="/q/:code" element={<QuickJoin />} />
-
-            {/* Utility routes */}
-            <Route path="/install" element={<Install />} />
-            <Route path="/setup" element={<SetupPage />} />
-
-            {/* Catch-all */}
+            <Route path="/" element={<Home />} />
+            <Route path="/mood" element={<MoodRecommender />} />
+            <Route path="/reviews" element={<Reviews />} />
+            <Route path="/new-releases" element={<NewReleases />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
