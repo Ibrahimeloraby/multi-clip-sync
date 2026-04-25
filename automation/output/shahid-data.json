@@ -1,10 +1,9 @@
 {
-  "scrapedAt": "2026-04-25T16:54:11.957Z",
+  "scrapedAt": "2026-04-25T17:04:00.399Z",
   "totalItems": 0,
   "byType": {},
   "genres": [],
   "countries": [],
-  "items": [],
   "apiEndpoints": [
     "/api/v2/channels",
     "/api/v2/content/free",
@@ -22,116 +21,5 @@
     "/api/v2/page/series",
     "/api/v2/page/trending"
   ],
-  "rawApiCaptures": [
-    {
-      "url": "https://shahid.mbc.net/api/v2/page/home?language=en&limit=48",
-      "status": 307,
-      "body": "/api/v2/page/home?language=en&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/page/series?language=en&limit=48",
-      "status": 307,
-      "body": "/api/v2/page/series?language=en&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/page/movies?language=en&limit=48",
-      "status": 307,
-      "body": "/api/v2/page/movies?language=en&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/page/programs?language=en&limit=48",
-      "status": 307,
-      "body": "/api/v2/page/programs?language=en&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/page/kids?language=en&limit=48",
-      "status": 307,
-      "body": "/api/v2/page/kids?language=en&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/page/trending?language=en&limit=48",
-      "status": 307,
-      "body": "/api/v2/page/trending?language=en&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/channels?language=en",
-      "status": 307,
-      "body": "/api/v2/channels?language=en"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/genres?language=en&type=series",
-      "status": 307,
-      "body": "/api/v2/genres?language=en&type=series"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/genres?language=en&type=movie",
-      "status": 307,
-      "body": "/api/v2/genres?language=en&type=movie"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/genres?language=en&type=program",
-      "status": 307,
-      "body": "/api/v2/genres?language=en&type=program"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/series?language=en&page=1&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/series?language=en&page=1&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/series?language=en&page=2&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/series?language=en&page=2&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/series?language=en&page=3&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/series?language=en&page=3&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=1&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/movies?language=en&page=1&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=2&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/movies?language=en&page=2&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=3&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/movies?language=en&page=3&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/programs?language=en&page=1&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/programs?language=en&page=1&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/kids?language=en&page=1&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/kids?language=en&page=1&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/trending?language=en&page=1&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/trending?language=en&page=1&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/free?language=en&page=1&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/free?language=en&page=1&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/free?language=en&page=2&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/free?language=en&page=2&limit=48"
-    },
-    {
-      "url": "https://shahid.mbc.net/api/v2/content/new?language=en&page=1&limit=48",
-      "status": 307,
-      "body": "/api/v2/content/new?language=en&page=1&limit=48"
-    }
-  ]
+  "items": []
 }
