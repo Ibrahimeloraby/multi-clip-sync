@@ -1,0 +1,154 @@
+{
+  "scrapedAt": "2026-04-25T15:19:33.208Z",
+  "baseUrl": "https://shahid.mbc.net/en",
+  "sections": [
+    {
+      "section": "home",
+      "url": "https://shahid.mbc.net/en",
+      "apiCalls": [],
+      "domContent": {
+        "navLinks": [],
+        "categories": [],
+        "items": [],
+        "banners": []
+      }
+    },
+    {
+      "section": "series",
+      "url": "https://shahid.mbc.net/en/series",
+      "apiCalls": [],
+      "domContent": {
+        "navLinks": [],
+        "categories": [],
+        "items": [],
+        "banners": []
+      }
+    },
+    {
+      "section": "movies",
+      "url": "https://shahid.mbc.net/en/movies",
+      "apiCalls": [],
+      "domContent": {
+        "navLinks": [],
+        "categories": [],
+        "items": [],
+        "banners": []
+      }
+    },
+    {
+      "section": "programs",
+      "url": "https://shahid.mbc.net/en/programs",
+      "apiCalls": [],
+      "domContent": {
+        "navLinks": [],
+        "categories": [],
+        "items": [],
+        "banners": []
+      }
+    },
+    {
+      "section": "kids",
+      "url": "https://shahid.mbc.net/en/kids",
+      "apiCalls": [],
+      "domContent": {
+        "navLinks": [],
+        "categories": [],
+        "items": [],
+        "banners": []
+      }
+    },
+    {
+      "section": "live",
+      "url": "https://shahid.mbc.net/en/live",
+      "apiCalls": [],
+      "domContent": {
+        "navLinks": [],
+        "categories": [],
+        "items": [],
+        "banners": []
+      }
+    }
+  ],
+  "directApiResults": [
+    {
+      "url": "https://shahid.mbc.net/api/v2/page/home?language=en",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/page/series?language=en",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/page/movies?language=en",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/page/programs?language=en",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/page/kids?language=en",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/channels?language=en",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/genres?language=en&type=series",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/genres?language=en&type=movie",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/content/series?language=en&page=1&limit=48",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=1&limit=48",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    },
+    {
+      "url": "https://shahid.mbc.net/api/v2/content/programs?language=en&page=1&limit=48",
+      "method": "GET",
+      "status": 403,
+      "body": "Host not in allowlist"
+    }
+  ],
+  "allItems": [],
+  "categories": [],
+  "apiEndpoints": [
+    "/api/v2/channels",
+    "/api/v2/content/movies",
+    "/api/v2/content/programs",
+    "/api/v2/content/series",
+    "/api/v2/genres",
+    "/api/v2/page/home",
+    "/api/v2/page/kids",
+    "/api/v2/page/movies",
+    "/api/v2/page/programs",
+    "/api/v2/page/series"
+  ]
+}
