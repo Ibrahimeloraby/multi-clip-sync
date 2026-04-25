@@ -1,0 +1,100 @@
+name: Scrape Shahid Library
+
+# ── Triggers ────────────────────────────────────────────────────────────────
+# 1. Manual trigger from GitHub UI (Actions → "Scrape Shahid Library" → Run)
+# 2. Scheduled: runs every Sunday at 03:00 UTC to keep catalog fresh
+# 3. Push to this workflow file itself (useful for testing)
+on:
+  workflow_dispatch:
+    inputs:
+      pages:
+        description: 'Comma-separated page names to scrape (leave blank for all)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 3 * * 0'
+  push:
+    paths:
+      - '.github/workflows/scrape-shahid.yml'
+      - 'automation/scrape-shahid.ts'
+
+# ── Permissions ─────────────────────────────────────────────────────────────
+permissions:
+  contents: write   # needed to commit the scraped data back
+
+jobs:
+  scrape:
+    name: Scrape Shahid.mbc.net
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: claude/scrape-mbc-website-CVjBn
+          fetch-depth: 1
+
+      # ── 2. Node.js ───────────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. Install deps ──────────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. Install Playwright + Chromium ─────────────────────────────────
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      # ── 5. Run scraper ───────────────────────────────────────────────────
+      - name: Run Shahid scraper
+        run: npx tsx automation/scrape-shahid.ts
+        env:
+          # No CHROMIUM_PATH needed — Playwright finds its own bundled browser
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
+      # ── 6. Show summary ──────────────────────────────────────────────────
+      - name: Print results summary
+        run: |
+          echo "=== Scrape complete ==="
+          node -e "
+            const data = require('./automation/output/shahid-data.json');
+            console.log('Total items:', data.totalItems);
+            console.log('By type:', JSON.stringify(data.byType, null, 2));
+            console.log('Genres (' + data.genres.length + '):', data.genres.slice(0, 20).join(', '));
+            console.log('Countries:', data.countries.join(', '));
+            console.log('API endpoints:', data.apiEndpoints.join('\n  '));
+            console.log('\nSample titles:');
+            data.items.slice(0, 15).forEach(i => console.log(' -', i.type, '|', i.title || i.titleAr));
+          "
+
+      # ── 7. Upload raw output as artifact ─────────────────────────────────
+      - name: Upload scraped data artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shahid-library-${{ github.run_id }}
+          path: automation/output/shahid-data.json
+          retention-days: 30
+
+      # ── 8. Commit scraped data back to branch ────────────────────────────
+      - name: Commit scraped data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add automation/output/shahid-data.json
+
+          # Only commit if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes in scraped data — skipping commit."
+          else
+            ITEM_COUNT=$(node -e "const d=require('./automation/output/shahid-data.json'); console.log(d.totalItems)")
+            git commit -m "chore(scraper): update Shahid library catalog ($ITEM_COUNT items) [skip ci]"
+            git push origin claude/scrape-mbc-website-CVjBn
+            echo "Pushed updated catalog to branch."
+          fi
