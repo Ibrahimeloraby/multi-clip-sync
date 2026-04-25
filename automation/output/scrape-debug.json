@@ -1,0 +1,155 @@
+{
+  "apiDiscovery": [
+    {
+      "path": "/api/v2/page/home",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/page/home?language=en"
+    },
+    {
+      "path": "/api/v2/page/home?language=en",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/page/home?language=en"
+    },
+    {
+      "path": "/api/v2/page/series?language=en&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/page/series?language=en&limit=48"
+    },
+    {
+      "path": "/api/v2/page/movies?language=en&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/page/movies?language=en&limit=48"
+    },
+    {
+      "path": "/api/v2/page/programs?language=en&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/page/programs?language=en&limit=48"
+    },
+    {
+      "path": "/api/v2/page/kids?language=en&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/page/kids?language=en&limit=48"
+    },
+    {
+      "path": "/api/v2/page/trending?language=en&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/page/trending?language=en&limit=48"
+    },
+    {
+      "path": "/api/v2/channels?language=en",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/channels?language=en"
+    },
+    {
+      "path": "/api/v2/genres?language=en&type=series",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/genres?language=en&type=series"
+    },
+    {
+      "path": "/api/v2/genres?language=en&type=movie",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/genres?language=en&type=movie"
+    },
+    {
+      "path": "/api/v2/content/series?language=en&page=1&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/series?language=en&page=1&limit=48"
+    },
+    {
+      "path": "/api/v2/content/series?language=en&page=2&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/series?language=en&page=2&limit=48"
+    },
+    {
+      "path": "/api/v2/content/series?language=en&page=3&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/series?language=en&page=3&limit=48"
+    },
+    {
+      "path": "/api/v2/content/series?language=en&page=4&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/series?language=en&page=4&limit=48"
+    },
+    {
+      "path": "/api/v2/content/movies?language=en&page=1&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=1&limit=48"
+    },
+    {
+      "path": "/api/v2/content/movies?language=en&page=2&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=2&limit=48"
+    },
+    {
+      "path": "/api/v2/content/movies?language=en&page=3&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=3&limit=48"
+    },
+    {
+      "path": "/api/v2/content/programs?language=en&page=1&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/programs?language=en&page=1&limit=48"
+    },
+    {
+      "path": "/api/v2/content/programs?language=en&page=2&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/programs?language=en&page=2&limit=48"
+    },
+    {
+      "path": "/api/v2/content/kids?language=en&page=1&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/kids?language=en&page=1&limit=48"
+    },
+    {
+      "path": "/api/v2/content/kids?language=en&page=2&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/kids?language=en&page=2&limit=48"
+    },
+    {
+      "path": "/api/v2/content/trending?language=en&page=1&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/trending?language=en&page=1&limit=48"
+    },
+    {
+      "path": "/api/v2/content/free?language=en&page=1&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/free?language=en&page=1&limit=48"
+    },
+    {
+      "path": "/api/v2/content/free?language=en&page=2&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/free?language=en&page=2&limit=48"
+    },
+    {
+      "path": "/api/v2/content/new?language=en&page=1&limit=48",
+      "status": 403,
+      "location": "",
+      "finalUrl": "https://shahid.mbc.net/api/v2/content/new?language=en&page=1&limit=48"
+    }
+  ],
+  "browserPages": []
+}
