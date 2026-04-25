@@ -2,297 +2,229 @@
  * Shahid MBC Full Library Scraper
  *
  * Strategy:
- *  1. Direct REST API — calls every known Shahid API path, follows redirects,
- *     logs Location headers to discover the real API base URL
- *  2. Browser (Playwright + stealth) — opens each section, intercepts ALL
- *     network responses, scrolls + paginates until content is exhausted
- *  3. Fallback DOM extraction — scrapes card elements if API interception misses
+ *  1. Wayback Machine (archive.org) — fetches archived Shahid pages and
+ *     extracts the __NEXT_DATA__ JSON that Next.js embeds in every HTML page.
+ *     archive.org doesn't block cloud IPs and preserves server-rendered data.
+ *  2. Direct REST API — tries known Shahid API endpoints. Returns 403 from
+ *     cloud IPs but kept as a first-pass attempt.
  *
  * Run locally:   npx tsx automation/scrape-shahid.ts
- * Run on CI:     GitHub Actions workflow (full internet access)
+ * Run on CI:     GitHub Actions workflow (.github/workflows/scrape-shahid.yml)
  */
 
 import * as fs   from 'fs';
 import * as path from 'path';
-import * as https from 'https';
-import * as http  from 'http';
-import { URL }    from 'url';
-
-// ── Playwright (stealth-patched) ───────────────────────────────────────────
-import { chromium as playwrightChromium } from 'playwright';
-// Try to load stealth — gracefully skip if not installed
-let chromiumLauncher: typeof playwrightChromium = playwrightChromium;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { chromium: stealthChromium } = require('playwright-extra');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const stealth = require('puppeteer-extra-plugin-stealth');
-  stealthChromium.use(stealth());
-  chromiumLauncher = stealthChromium;
-  console.log('✓ Stealth mode enabled');
-} catch {
-  console.log('⚠ Stealth plugin not available — using plain Playwright');
-}
-
-import type { Browser, BrowserContext, Page, Response } from 'playwright';
+import { URL }   from 'url';
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
-const BASE          = 'https://shahid.mbc.net';
-const BASE_EN       = `${BASE}/en`;
-const CHROMIUM_PATH = process.env.CHROMIUM_PATH || undefined;
-const OUTPUT_DIR    = path.join(process.cwd(), 'automation', 'output');
-const OUTPUT_FILE   = path.join(OUTPUT_DIR, 'shahid-data.json');
-const DEBUG_FILE    = path.join(OUTPUT_DIR, 'scrape-debug.json');
-const MAX_REDIRECTS = 10;
+const BASE       = 'https://shahid.mbc.net';
+const OUTPUT_DIR = path.join(process.cwd(), 'automation', 'output');
+const OUTPUT_FILE = path.join(OUTPUT_DIR, 'shahid-data.json');
+const DEBUG_FILE  = path.join(OUTPUT_DIR, 'scrape-debug.json');
+const WAYBACK     = 'https://web.archive.org';
 
-// Pages to crawl with Playwright
-const PAGES_TO_CRAWL = [
-  { name: 'home',             url: `${BASE_EN}` },
-  { name: 'series',           url: `${BASE_EN}/series` },
-  { name: 'movies',           url: `${BASE_EN}/movies` },
-  { name: 'programs',         url: `${BASE_EN}/programs` },
-  { name: 'kids',             url: `${BASE_EN}/kids` },
-  { name: 'trending',         url: `${BASE_EN}/trending` },
-  { name: 'free',             url: `${BASE_EN}/free` },
-  { name: 'turkish-series',   url: `${BASE_EN}/landingpages/turkishseries` },
-  { name: 'ramadan-2026',     url: `${BASE_EN}/ramadan2026` },
-  { name: 'ramadan-2025',     url: `${BASE_EN}/ramadan2025` },
+// Shahid pages to retrieve from the Wayback Machine
+const SHAHID_PAGES = [
+  `${BASE}/en`,
+  `${BASE}/en/series`,
+  `${BASE}/en/movies`,
+  `${BASE}/en/programs`,
+  `${BASE}/en/kids`,
+  `${BASE}/en/trending`,
+  `${BASE}/en/free`,
+  `${BASE}/en/landingpages/turkishseries`,
+  `${BASE}/en/ramadan2026`,
+  `${BASE}/en/ramadan2025`,
+  `${BASE}/ar/series`,
+  `${BASE}/ar/movies`,
+  `${BASE}/ar/programs`,
+  `${BASE}/ar/kids`,
 ];
 
-// API paths to try — we follow any redirects to find the real base
+// Direct API paths (attempted first — usually 403 from cloud IPs)
 const API_PATHS = [
   '/api/v2/page/home?language=en',
   '/api/v2/page/series?language=en&limit=48',
   '/api/v2/page/movies?language=en&limit=48',
-  '/api/v2/page/programs?language=en&limit=48',
   '/api/v2/page/kids?language=en&limit=48',
-  '/api/v2/page/trending?language=en&limit=48',
-  '/api/v2/channels?language=en',
-  '/api/v2/genres?language=en&type=series',
-  '/api/v2/genres?language=en&type=movie',
   '/api/v2/content/series?language=en&page=1&limit=48',
   '/api/v2/content/series?language=en&page=2&limit=48',
   '/api/v2/content/series?language=en&page=3&limit=48',
-  '/api/v2/content/series?language=en&page=4&limit=48',
   '/api/v2/content/movies?language=en&page=1&limit=48',
   '/api/v2/content/movies?language=en&page=2&limit=48',
-  '/api/v2/content/movies?language=en&page=3&limit=48',
-  '/api/v2/content/programs?language=en&page=1&limit=48',
-  '/api/v2/content/programs?language=en&page=2&limit=48',
   '/api/v2/content/kids?language=en&page=1&limit=48',
-  '/api/v2/content/kids?language=en&page=2&limit=48',
   '/api/v2/content/trending?language=en&page=1&limit=48',
   '/api/v2/content/free?language=en&page=1&limit=48',
-  '/api/v2/content/free?language=en&page=2&limit=48',
   '/api/v2/content/new?language=en&page=1&limit=48',
 ];
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface ContentItem {
-  id: string;
-  title: string;
-  titleAr: string;
-  type: string;
-  genres: string[];
-  moods: string[];
-  keywords: string[];
-  year?: number;
-  rating?: string;
-  episodes?: number;
-  seasons?: number;
-  duration?: number;
-  poster: string;
-  hero: string;
+  id:          string;
+  title:       string;
+  titleAr:     string;
+  type:        string;
+  genres:      string[];
+  moods:       string[];
+  keywords:    string[];
+  year?:       number;
+  rating?:     string;
+  episodes?:   number;
+  seasons?:    number;
+  duration?:   number;
+  poster:      string;
+  hero:        string;
   description: string;
-  isNew?: boolean;
+  isNew?:      boolean;
   isTrending?: boolean;
   isFeatured?: boolean;
-  language?: string;
-  country?: string;
-  source: string;
+  language?:   string;
+  country?:    string;
+  source:      string;
 }
 
-interface ApiCapture {
-  url: string;
-  finalUrl: string;
-  redirectChain: string[];
-  status: number;
-  body: unknown;
-}
-
-interface DebugInfo {
-  apiDiscovery: { path: string; status: number; location: string; finalUrl: string }[];
-  browserPages: { name: string; finalUrl: string; interceptedUrls: string[]; domItems: number }[];
+interface DebugEntry {
+  url:      string;
+  method:   string;
+  status:   number;
+  snapshot: string;
+  items:    number;
+  error?:   string;
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 
-const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
-const ensureDir = (d: string) => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); };
+const sleep     = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+const ensureDir = (d: string)  => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); };
 
-const REQUEST_HEADERS: Record<string, string> = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  'Accept': 'application/json, text/javascript, */*; q=0.01',
+const BROWSER_HEADERS: Record<string, string> = {
+  'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
-  'Accept-Encoding': 'gzip, deflate, br',
-  'Referer': `${BASE_EN}/`,
-  'Origin': BASE_EN,
-  'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124"',
-  'sec-ch-ua-mobile': '?0',
-  'sec-ch-ua-platform': '"Windows"',
-  'sec-fetch-dest': 'empty',
-  'sec-fetch-mode': 'cors',
-  'sec-fetch-site': 'same-origin',
-  'x-app-version': '10.0.0',
-  'x-platform': 'web',
+  'Accept-Encoding': 'gzip, deflate',
+  'Connection':      'keep-alive',
+  'Cache-Control':   'no-cache',
 };
 
-/**
- * HTTP GET that follows redirects (up to MAX_REDIRECTS hops) and returns
- * the final URL, full redirect chain, and parsed JSON body.
- */
-function httpGetFollowRedirects(
-  startUrl: string,
-  redirectChain: string[] = [],
-  hopCount = 0
-): Promise<{ status: number; body: unknown; finalUrl: string; redirectChain: string[]; locationHeader: string }> {
-  return new Promise(resolve => {
-    if (hopCount > MAX_REDIRECTS) {
-      resolve({ status: 0, body: { error: 'too many redirects' }, finalUrl: startUrl, redirectChain, locationHeader: '' });
-      return;
-    }
+const API_HEADERS: Record<string, string> = {
+  'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  'Accept':          'application/json, */*',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Referer':         `${BASE}/en/`,
+  'Origin':          BASE,
+  'x-app-version':   '10.0.0',
+  'x-platform':      'web',
+};
 
-    let parsedUrl: URL;
-    try { parsedUrl = new URL(startUrl); } catch {
-      resolve({ status: 0, body: { error: 'invalid url' }, finalUrl: startUrl, redirectChain, locationHeader: '' });
-      return;
-    }
-
-    const lib = parsedUrl.protocol === 'https:' ? https : http;
-    const options = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
-      path: parsedUrl.pathname + parsedUrl.search,
-      method: 'GET',
-      headers: REQUEST_HEADERS,
-      rejectUnauthorized: false,
-    };
-
-    const req = lib.request(options, res => {
-      const status = res.statusCode ?? 0;
-      const locationHeader = (res.headers['location'] as string) ?? '';
-
-      // Follow 3xx redirects
-      if (status >= 300 && status < 400 && locationHeader) {
-        const nextUrl = locationHeader.startsWith('http')
-          ? locationHeader
-          : new URL(locationHeader, startUrl).toString();
-        console.log(`    ↳ ${status} → ${nextUrl}`);
-        redirectChain.push(nextUrl);
-        httpGetFollowRedirects(nextUrl, redirectChain, hopCount + 1).then(resolve);
-        res.resume(); // drain
-        return;
-      }
-
-      const chunks: Buffer[] = [];
-      res.on('data', c => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
-      res.on('end', () => {
-        const raw = Buffer.concat(chunks).toString('utf-8');
-        let body: unknown = raw;
-        try { body = JSON.parse(raw); } catch { /* keep as string */ }
-        resolve({ status, body, finalUrl: startUrl, redirectChain, locationHeader });
-      });
-    });
-
-    req.on('error', e => resolve({ status: 0, body: { error: e.message }, finalUrl: startUrl, redirectChain, locationHeader: '' }));
-    req.setTimeout(20000, () => { req.destroy(); resolve({ status: 0, body: { error: 'timeout' }, finalUrl: startUrl, redirectChain, locationHeader: '' }); });
-    req.end();
-  });
+async function fetchText(url: string, headers: Record<string, string>, timeoutMs = 30000): Promise<{ status: number; text: string; finalUrl: string }> {
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { headers, signal: ctrl.signal, redirect: 'follow' });
+    const text = await res.text();
+    return { status: res.status, text, finalUrl: res.url };
+  } catch (e: unknown) {
+    return { status: 0, text: '', finalUrl: url };
+  } finally {
+    clearTimeout(tid);
+  }
 }
 
-// ── Content extraction ─────────────────────────────────────────────────────
+async function fetchJson(url: string, headers: Record<string, string>, timeoutMs = 20000): Promise<{ status: number; body: unknown; finalUrl: string }> {
+  const { status, text, finalUrl } = await fetchText(url, headers, timeoutMs);
+  let body: unknown = null;
+  try { body = JSON.parse(text); } catch { /* keep null */ }
+  return { status, body, finalUrl };
+}
+
+// ── Content model helpers ──────────────────────────────────────────────────
 
 function inferMoods(genres: string[], keywords: string[]): string[] {
   const all = [...genres, ...keywords].map(s => s.toLowerCase());
   const m: string[] = [];
-  if (all.some(s => /comedy|funny|humor|sitcom/.test(s)))          m.push('funny', 'lighthearted');
-  if (all.some(s => /romance|romantic|love/.test(s)))              m.push('romantic');
-  if (all.some(s => /action|adventure/.test(s)))                   m.push('exciting', 'adventurous');
-  if (all.some(s => /thrill|suspense/.test(s)))                    m.push('thrilling', 'tense');
-  if (all.some(s => /horror|scary|supernatural|ghost/.test(s)))    m.push('scary', 'thrilling');
-  if (all.some(s => /drama|emotional/.test(s)))                    m.push('emotional', 'dramatic');
-  if (all.some(s => /histor|period|epic/.test(s)))                 m.push('epic', 'inspiring');
-  if (all.some(s => /mystery|crime|detective/.test(s)))            m.push('mysterious', 'tense');
-  if (all.some(s => /family|kids|children|anim/.test(s)))          m.push('family', 'heartwarming');
-  if (all.some(s => /sci.fi|fantasy|future/.test(s)))              m.push('epic', 'thought-provoking');
-  if (all.some(s => /music|singing|talent|compet/.test(s)))        m.push('inspiring', 'musical');
-  if (all.some(s => /social|society|issue/.test(s)))               m.push('thought-provoking', 'dramatic');
-  if (all.some(s => /war|battle|military/.test(s)))                m.push('epic', 'dramatic');
+  if (all.some(s => /comedy|funny|humor|sitcom/.test(s)))             m.push('funny', 'lighthearted');
+  if (all.some(s => /romance|romantic|love/.test(s)))                 m.push('romantic');
+  if (all.some(s => /action|adventure/.test(s)))                      m.push('exciting', 'adventurous');
+  if (all.some(s => /thrill|suspense/.test(s)))                       m.push('thrilling', 'tense');
+  if (all.some(s => /horror|scary|supernatural|ghost/.test(s)))       m.push('scary', 'thrilling');
+  if (all.some(s => /drama|emotional/.test(s)))                       m.push('emotional', 'dramatic');
+  if (all.some(s => /histor|period|epic/.test(s)))                    m.push('epic', 'inspiring');
+  if (all.some(s => /mystery|crime|detective/.test(s)))               m.push('mysterious', 'tense');
+  if (all.some(s => /family|kids|children|anim/.test(s)))             m.push('family', 'heartwarming');
+  if (all.some(s => /sci.fi|fantasy|future/.test(s)))                 m.push('epic', 'thought-provoking');
+  if (all.some(s => /music|singing|talent|compet/.test(s)))           m.push('inspiring', 'musical');
+  if (all.some(s => /social|society|issue/.test(s)))                  m.push('thought-provoking', 'dramatic');
+  if (all.some(s => /war|battle|military/.test(s)))                   m.push('epic', 'dramatic');
   return [...new Set(m)];
 }
 
 function normalizeType(raw: unknown): string {
   const s = String(raw ?? '').toLowerCase();
-  if (s.includes('movie') || s.includes('film'))                    return 'movie';
+  if (s.includes('movie') || s.includes('film'))                      return 'movie';
   if (s.includes('series') || s.includes('show') || s.includes('drama')) return 'series';
-  if (s.includes('program') || s.includes('talk'))                  return 'program';
+  if (s.includes('program') || s.includes('talk'))                    return 'program';
   if (s.includes('kid') || s.includes('child') || s.includes('anim')) return 'kids';
-  if (s.includes('channel') || s.includes('live'))                  return 'live';
+  if (s.includes('channel') || s.includes('live'))                    return 'live';
   return s || 'series';
 }
 
 function extractImage(o: Record<string, unknown>): string {
   const keys = ['thumbnailUrl','imageUrl','posterUrl','coverUrl','thumbnail','image','poster',
-                'coverImage','horizontalImage','verticalImage','squareImage','smallImage','mediumImage'];
+                 'coverImage','horizontalImage','verticalImage','squareImage','smallImage','mediumImage',
+                 'imageMain','imagePoster','imageThumb'];
   for (const k of keys) {
     const v = o[k];
-    if (typeof v === 'string' && v.startsWith('http')) return v;
+    if (typeof v === 'string' && v.startsWith('http') && !v.includes('web.archive.org')) return v;
     if (v && typeof v === 'object') {
       for (const vv of Object.values(v as Record<string, unknown>)) {
-        if (typeof vv === 'string' && vv.startsWith('http')) return vv;
+        if (typeof vv === 'string' && vv.startsWith('http') && !vv.includes('web.archive.org')) return vv;
       }
     }
   }
   return '';
 }
 
-function extractHero(o: Record<string, unknown>, fallback: string): string {
-  const keys = ['heroImage','bannerImage','landscapeImage','horizontalImage','backgroundImage','wideImage'];
-  for (const k of keys) {
-    const v = o[k];
-    if (typeof v === 'string' && v.startsWith('http')) return v;
-    if (v && typeof v === 'object') {
-      for (const vv of Object.values(v as Record<string, unknown>)) {
-        if (typeof vv === 'string' && vv.startsWith('http')) return vv;
-      }
-    }
-  }
-  return fallback;
+function unwaybackUrl(url: string): string {
+  // Strip Wayback Machine wrapper from archived URLs
+  // e.g. https://web.archive.org/web/20250101000000/https://imgcdn.shahid.mbc.net/...
+  const m = url.match(/web\.archive\.org\/web\/\d+\/(https?:\/\/[^\s"']+)/);
+  return m ? m[1] : url;
 }
 
 function buildItem(o: Record<string, unknown>, source: string): ContentItem | null {
-  const id    = String(o.id ?? o.contentId ?? o.seriesId ?? o.movieId ?? o.programId ?? o.channelId ?? '');
-  const title = String(o.title ?? o.titleEn ?? o.name ?? o.nameEn ?? '');
-  const titleAr = String(o.titleAr ?? o.nameAr ?? o.arabicTitle ?? '');
+  const id      = String(o.id ?? o.contentId ?? o.seriesId ?? o.movieId ?? o.programId ?? o.channelId ?? '');
+  const title   = String(o.title ?? o.titleEn ?? o.name ?? o.nameEn ?? '');
+  const titleAr = String(o.titleAr ?? o.nameAr ?? o.arabicTitle ?? o.titleAR ?? '');
   if (!id && !title && !titleAr) return null;
+  if ((title + titleAr).length < 2) return null;
 
-  const rawGenres = (Array.isArray(o.genres) ? o.genres :
-                     Array.isArray(o.genre)  ? o.genre  :
-                     Array.isArray(o.categories) ? o.categories : [])
-    .map((g: unknown) => typeof g === 'string' ? g : String((g as Record<string,unknown>)?.name ?? (g as Record<string,unknown>)?.title ?? ''))
-    .filter(Boolean) as string[];
+  const rawGenres = (
+    Array.isArray(o.genres)      ? o.genres :
+    Array.isArray(o.genre)       ? o.genre  :
+    Array.isArray(o.categories)  ? o.categories : []
+  ).map((g: unknown) =>
+    typeof g === 'string' ? g : String((g as Record<string,unknown>)?.name ?? (g as Record<string,unknown>)?.title ?? '')
+  ).filter(Boolean) as string[];
 
-  const keywords = (Array.isArray(o.tags) ? o.tags :
-                    Array.isArray(o.keywords) ? o.keywords : []).map(String).filter(Boolean);
+  const keywords = (Array.isArray(o.tags) ? o.tags : Array.isArray(o.keywords) ? o.keywords : []).map(String).filter(Boolean);
 
-  const poster = extractImage(o) || `https://picsum.photos/seed/${encodeURIComponent(id||title)}/300/450`;
-  const hero   = extractHero(o, poster);
+  let poster = extractImage(o);
+  if (poster) poster = unwaybackUrl(poster);
+  if (!poster) poster = `https://placehold.co/300x450/0f172a/3B82F6?text=${encodeURIComponent((title || titleAr).slice(0, 20))}`;
+
+  const heroKeys = ['heroImage','bannerImage','landscapeImage','horizontalImage','backgroundImage','wideImage','coverWide'];
+  let hero = '';
+  for (const k of heroKeys) {
+    const v = o[k];
+    if (typeof v === 'string' && v.startsWith('http')) { hero = unwaybackUrl(v); break; }
+  }
+  if (!hero) hero = poster;
 
   return {
     id, title, titleAr,
-    type:        normalizeType(o.type ?? o.contentType ?? o.videoType),
+    type:        normalizeType(o.type ?? o.contentType ?? o.videoType ?? o.programType),
     genres:      rawGenres,
     moods:       inferMoods(rawGenres, keywords),
     keywords,
@@ -306,23 +238,26 @@ function buildItem(o: Record<string, unknown>, source: string): ContentItem | nu
     isNew:       !!(o.isNew ?? o.new),
     isTrending:  !!(o.isTrending ?? o.trending),
     isFeatured:  !!(o.isFeatured ?? o.featured),
-    language:    String(o.language ?? o.audioLanguage ?? ''),
-    country:     String(o.country ?? o.countryOfOrigin ?? ''),
+    language:    String(o.language ?? o.audioLanguage ?? o.mainLanguage ?? ''),
+    country:     String(o.country ?? o.countryOfOrigin ?? o.productionCountry ?? ''),
     source,
   };
 }
 
-function walkExtract(obj: unknown, source: string, out: ContentItem[]) {
-  if (!obj || typeof obj !== 'object') return;
-  if (Array.isArray(obj)) { obj.forEach(v => walkExtract(v, source, out)); return; }
+function walkExtract(obj: unknown, source: string, out: ContentItem[], depth = 0) {
+  if (depth > 25 || !obj || typeof obj !== 'object') return;
+  if (Array.isArray(obj)) {
+    obj.forEach(v => walkExtract(v, source, out, depth + 1));
+    return;
+  }
   const o = obj as Record<string, unknown>;
-  const hasId    = o.id || o.contentId || o.seriesId || o.movieId || o.programId || o.channelId;
-  const hasTitle = o.title || o.titleEn || o.name || o.titleAr;
+  const hasId    = o.id || o.contentId || o.seriesId || o.movieId || o.programId;
+  const hasTitle = o.title || o.titleEn || o.name || o.titleAr || o.nameAr;
   if (hasId && hasTitle) {
     const item = buildItem(o, source);
     if (item) out.push(item);
   }
-  Object.values(o).forEach(v => { if (v && typeof v === 'object') walkExtract(v, source, out); });
+  Object.values(o).forEach(v => { if (v && typeof v === 'object') walkExtract(v, source, out, depth + 1); });
 }
 
 function deduplicate(items: ContentItem[]): ContentItem[] {
@@ -331,7 +266,6 @@ function deduplicate(items: ContentItem[]): ContentItem[] {
     const key = item.id || `${item.title}::${item.type}`;
     const ex  = map.get(key);
     if (!ex) { map.set(key, item); continue; }
-    // Merge: keep non-empty fields, union arrays
     const merged = { ...ex };
     for (const k of Object.keys(item) as (keyof ContentItem)[]) {
       const v = item[k];
@@ -347,376 +281,221 @@ function deduplicate(items: ContentItem[]): ContentItem[] {
   return [...map.values()];
 }
 
+function extractFromHtml(html: string, source: string, out: ContentItem[]) {
+  // 1. __NEXT_DATA__ — richest source, embedded by Next.js SSR
+  const nextMatch = html.match(/<script[^>]+id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (nextMatch?.[1]) {
+    try { walkExtract(JSON.parse(nextMatch[1]), `next-data:${source}`, out); }
+    catch { /* bad JSON */ }
+  }
+
+  // 2. JSON-LD structured data
+  const jsonLdRe = /<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g;
+  for (const m of html.matchAll(jsonLdRe)) {
+    try { walkExtract(JSON.parse(m[1]), `json-ld:${source}`, out); }
+    catch { /* bad JSON */ }
+  }
+
+  // 3. Inline window.__STATE__ or similar
+  const stateRe = /(?:window\.__(?:STATE|REDUX_STATE|INITIAL_STATE|APP_STATE)__|__(?:INITIAL|PRELOADED)_STATE__\s*=)\s*(\{[\s\S]{50,}?\});?\s*(?:<\/script>|window\.)/g;
+  for (const m of html.matchAll(stateRe)) {
+    try { walkExtract(JSON.parse(m[1]), `window-state:${source}`, out); }
+    catch { /* bad JSON */ }
+  }
+}
+
 // ── Phase 1: Direct API ────────────────────────────────────────────────────
 
-async function runDirectApi(debug: DebugInfo): Promise<ContentItem[]> {
-  const items: ContentItem[] = [];
+async function runDirectApi(debug: DebugEntry[]): Promise<ContentItem[]> {
   console.log('\n─── Phase 1: Direct API calls ───');
+  const items: ContentItem[] = [];
 
-  // Probe the first path with verbose redirect logging to discover real API base
-  let realApiBase = BASE;
-  const probe = await httpGetFollowRedirects(`${BASE}/api/v2/page/home?language=en`);
-  if (probe.redirectChain.length > 0) {
-    const finalHost = new URL(probe.finalUrl).origin;
-    if (finalHost !== BASE) {
-      console.log(`  ★ Real API base discovered: ${finalHost}`);
-      realApiBase = finalHost;
-    }
-  }
-  debug.apiDiscovery.push({
-    path: '/api/v2/page/home',
-    status: probe.status,
-    location: probe.locationHeader,
-    finalUrl: probe.finalUrl,
-  });
-
-  // Now call all paths using the real base (or BASE if no redirect found)
   for (const apiPath of API_PATHS) {
-    const url = `${realApiBase}${apiPath}`;
-    process.stdout.write(`  GET ${apiPath.split('?')[0].padEnd(40)} `);
-    const { status, body, finalUrl, redirectChain } = await httpGetFollowRedirects(url);
-    process.stdout.write(`→ ${status}  (redirects: ${redirectChain.length})\n`);
-
-    debug.apiDiscovery.push({ path: apiPath, status, location: '', finalUrl });
-
-    if (status === 200 && body && typeof body === 'object') {
-      const extracted: ContentItem[] = [];
-      walkExtract(body, `api:${apiPath}`, extracted);
-      console.log(`    extracted ${extracted.length} items`);
-      items.push(...extracted);
-    } else if (status !== 200) {
-      // Try with the actual discovered final URL if we got a redirect
-      if (finalUrl !== url && status === 0) {
-        const retry = await httpGetFollowRedirects(finalUrl);
-        if (retry.status === 200 && retry.body) {
-          const ex: ContentItem[] = [];
-          walkExtract(retry.body, `api-retry:${apiPath}`, ex);
-          console.log(`    retry → ${retry.status}  extracted ${ex.length}`);
-          items.push(...ex);
-        }
-      }
-    }
-
+    const url = `${BASE}${apiPath}`;
+    process.stdout.write(`  GET ${apiPath.split('?')[0].padEnd(35)} `);
+    const { status, body, finalUrl } = await fetchJson(url, API_HEADERS);
+    const extracted: ContentItem[] = [];
+    if (status === 200 && body) walkExtract(body, `api:${apiPath}`, extracted);
+    process.stdout.write(`→ ${status}  items: ${extracted.length}\n`);
+    debug.push({ url, method: 'direct-api', status, snapshot: finalUrl, items: extracted.length });
+    items.push(...extracted);
     await sleep(300);
   }
 
+  console.log(`  API subtotal: ${items.length} raw items`);
   return items;
 }
 
-// ── Phase 2: Playwright browser ────────────────────────────────────────────
+// ── Phase 2: Wayback Machine ───────────────────────────────────────────────
 
-async function runBrowser(debug: DebugInfo): Promise<ContentItem[]> {
-  console.log('\n─── Phase 2: Browser scraping (stealth) ───');
+/**
+ * Get the timestamp of the most recent successful Wayback snapshot for a URL.
+ * Uses the CDX API: https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
+ */
+async function getLatestSnapshot(url: string): Promise<string | null> {
+  const cdxUrl = `${WAYBACK}/cdx/search/cdx?url=${encodeURIComponent(url)}&output=json&limit=3&filter=statuscode:200&fl=timestamp&order=desc`;
+  const { status, body } = await fetchJson(cdxUrl, { 'User-Agent': 'Mozilla/5.0' }, 15000);
+  if (status !== 200 || !Array.isArray(body) || (body as unknown[]).length < 2) return null;
+  // First row is ['timestamp'] header, second row is data
+  const rows = body as string[][];
+  return rows[1]?.[0] ?? null;
+}
+
+async function runWayback(debug: DebugEntry[]): Promise<ContentItem[]> {
+  console.log('\n─── Phase 2: Wayback Machine (archive.org) ───');
   const items: ContentItem[] = [];
 
-  const launchOpts: Parameters<typeof playwrightChromium.launch>[0] = {
-    headless: true,
-    ignoreHTTPSErrors: true,
-    args: [
-      '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
-      '--disable-gpu', '--ignore-certificate-errors', '--no-first-run',
-      '--disable-blink-features=AutomationControlled',
-      '--disable-infobars',
-      '--window-size=1920,1080',
-    ],
-  };
-  if (CHROMIUM_PATH) launchOpts.executablePath = CHROMIUM_PATH;
+  for (const pageUrl of SHAHID_PAGES) {
+    const label = new URL(pageUrl).pathname;
+    process.stdout.write(`  ${label.padEnd(40)} `);
 
-  let browser: Browser | null = null;
-  try {
-    browser = await chromiumLauncher.launch(launchOpts);
-  } catch (e: unknown) {
-    console.warn('  ✗ Browser launch failed:', (e as Error).message);
-    return items;
-  }
+    let snapshot = '';
+    let html     = '';
+    let status   = 0;
 
-  const context: BrowserContext = await browser.newContext({
-    ignoreHTTPSErrors: true,
-    viewport: { width: 1920, height: 1080 },
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    locale: 'en-US',
-    timezoneId: 'Asia/Riyadh',
-    extraHTTPHeaders: {
-      'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
-      'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124"',
-      'sec-ch-ua-mobile': '?0',
-      'sec-ch-ua-platform': '"Windows"',
-    },
-  });
-
-  // Remove webdriver flag
-  await context.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-    (window as unknown as Record<string, unknown>).chrome = { runtime: {} };
-  });
-
-  for (const pageDef of PAGES_TO_CRAWL) {
-    const pageItems: ContentItem[] = [];
-    const interceptedUrls: string[] = [];
-
-    const page: Page = await context.newPage();
-
-    // Capture ALL responses — log URLs, extract from JSON
-    page.on('response', async (res: Response) => {
-      const resUrl = res.url();
-      interceptedUrls.push(resUrl);
-
-      // Skip non-data responses
-      if (/\.(png|jpg|gif|woff|woff2|ttf|svg|ico|css|mp4|m3u8)(\?|$)/.test(resUrl)) return;
-      if (/analytics|gtm|doubleclick|facebook|ads|tracking|beacon|amplitude|segment/i.test(resUrl)) return;
-
-      const ct = (res.headers()['content-type'] ?? '').toLowerCase();
-      if (!ct.includes('json') && !ct.includes('javascript')) return;
-
-      try {
-        const text = await res.text().catch(() => null);
-        if (!text) return;
-
-        // Try to extract JSON even from JS bundles (next.js __NEXT_DATA__)
-        let parsed: unknown;
-        try { parsed = JSON.parse(text); } catch {
-          // Try extracting embedded JSON objects from JS
-          const jsonMatches = text.match(/\{[^{}]{100,}\}/g) ?? [];
-          for (const m of jsonMatches.slice(0, 5)) {
-            try {
-              const p = JSON.parse(m);
-              walkExtract(p, `browser-js:${pageDef.name}`, pageItems);
-            } catch { /* skip */ }
-          }
-          return;
-        }
-        walkExtract(parsed, `browser:${pageDef.name}`, pageItems);
-      } catch { /* ignore */ }
-    });
-
-    // Also intercept __NEXT_DATA__ from the HTML
-    page.on('response', async (res: Response) => {
-      if (!res.url().endsWith('.html') && !res.url() === new URL(pageDef.url) as unknown as boolean) return;
-      const ct = (res.headers()['content-type'] ?? '').toLowerCase();
-      if (!ct.includes('html')) return;
-      try {
-        const text = await res.text().catch(() => '');
-        const match = text.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-        if (match?.[1]) {
-          try {
-            const nextData = JSON.parse(match[1]);
-            walkExtract(nextData, `next-data:${pageDef.name}`, pageItems);
-          } catch { /* skip */ }
-        }
-      } catch { /* ignore */ }
-    });
-
-    console.log(`  [${pageDef.name}]  ${pageDef.url}`);
-    try {
-      await page.goto(pageDef.url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      // Wait for either a content card or a Cloudflare challenge to resolve
-      await Promise.race([
-        page.waitForSelector('[class*="card"], [class*="tile"], [class*="content-item"], [class*="series"]', { timeout: 15000 }),
-        page.waitForTimeout(15000),
-      ]).catch(() => {});
-    } catch { /* timeout — continue */ }
-
-    // Check if we hit a Cloudflare/bot challenge
-    const title = await page.title().catch(() => '');
-    const bodyText = await page.evaluate(() => document.body?.innerText?.slice(0, 200) ?? '').catch(() => '');
-    if (/just a moment|cloudflare|enable javascript|ray id/i.test(title + bodyText)) {
-      console.log(`    ⚠ Bot challenge detected — waiting 8s for it to resolve…`);
-      await page.waitForTimeout(8000);
+    // Strategy A: direct Wayback URL without timestamp (auto-redirects to latest)
+    const directUrl = `${WAYBACK}/web/${pageUrl}`;
+    const directRes = await fetchText(directUrl, BROWSER_HEADERS, 35000);
+    if (directRes.status === 200 && directRes.text.length > 1000) {
+      html     = directRes.text;
+      status   = 200;
+      snapshot = directRes.finalUrl;
+    } else {
+      // Strategy B: look up the CDX API for the latest known snapshot
+      const ts = await getLatestSnapshot(pageUrl);
+      if (ts) {
+        snapshot = `${WAYBACK}/web/${ts}if_/${pageUrl}`;
+        const archiveRes = await fetchText(snapshot, BROWSER_HEADERS, 35000);
+        html   = archiveRes.text;
+        status = archiveRes.status;
+      }
     }
 
-    // Now wait for networkidle to let remaining API calls fire
-    await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+    const pageItems: ContentItem[] = [];
+    if (status === 200 && html.length > 1000) {
+      extractFromHtml(html, label, pageItems);
+    }
 
-    // Scroll to trigger lazy-loaded content
-    await autoScroll(page);
-    await sleep(2000);
-
-    // Click any "Load More" buttons
-    await clickLoadMore(page);
-
-    // Extract __NEXT_DATA__ from DOM
-    const nextData = await page.evaluate(() => {
-      const el = document.getElementById('__NEXT_DATA__');
-      if (!el?.textContent) return null;
-      try { return JSON.parse(el.textContent); } catch { return null; }
-    }).catch(() => null);
-    if (nextData) walkExtract(nextData, `next-data:${pageDef.name}`, pageItems);
-
-    // DOM card fallback
-    const domItems = await extractDom(page, pageDef.name);
-    pageItems.push(...domItems);
-
-    // Log
-    const apiUrls = interceptedUrls.filter(u => u.includes('/api/') || u.includes('graphql'));
-    debug.browserPages.push({
-      name: pageDef.name,
-      finalUrl: page.url(),
-      interceptedUrls: apiUrls.slice(0, 20),
-      domItems: domItems.length,
-    });
-    console.log(`    items: ${pageItems.length}  api-hits: ${apiUrls.length}  dom-cards: ${domItems.length}`);
-    console.log(`    page title: "${title}"`);
-    if (apiUrls.length > 0) console.log(`    sample API URLs: ${apiUrls.slice(0,3).join('\n      ')}`);
+    process.stdout.write(`→ ${status}  snapshot: ${snapshot.slice(-40) || 'none'}  items: ${pageItems.length}\n`);
+    debug.push({ url: pageUrl, method: 'wayback', status, snapshot, items: pageItems.length });
 
     items.push(...pageItems);
-    await page.close().catch(() => {});
+    await sleep(2000); // Be polite to archive.org
+  }
+
+  console.log(`  Wayback subtotal: ${items.length} raw items`);
+  return items;
+}
+
+// ── Phase 3: Wayback CDX bulk listing ─────────────────────────────────────
+// Enumerate all Shahid content URLs indexed by archive.org, then fetch each
+
+async function runWaybackCdxBulk(debug: DebugEntry[]): Promise<ContentItem[]> {
+  console.log('\n─── Phase 3: Wayback CDX bulk URL enumeration ───');
+  const items: ContentItem[] = [];
+
+  // Content URL patterns on Shahid
+  const patterns = [
+    'shahid.mbc.net/en/series/*',
+    'shahid.mbc.net/en/movie/*',
+    'shahid.mbc.net/en/program/*',
+  ];
+
+  for (const pattern of patterns) {
+    const cdxUrl = `${WAYBACK}/cdx/search/cdx?url=${encodeURIComponent(pattern)}&output=json&fl=original,timestamp&filter=statuscode:200&collapse=urlkey&limit=200`;
+    const { status, body } = await fetchJson(cdxUrl, { 'User-Agent': 'Mozilla/5.0' }, 20000);
+    if (status !== 200 || !Array.isArray(body) || (body as unknown[]).length < 2) {
+      console.log(`  CDX query failed for ${pattern}: ${status}`);
+      continue;
+    }
+    const rows = (body as string[][]).slice(1); // skip header row
+    console.log(`  Found ${rows.length} archived URLs for pattern ${pattern}`);
+
+    // Fetch a sample of them (limit to 30 per pattern to keep runtime reasonable)
+    const sample = rows.slice(0, 30);
+    for (const [origUrl, ts] of sample) {
+      const archiveUrl = `${WAYBACK}/web/${ts}if_/${origUrl}`;
+      const res = await fetchText(archiveUrl, BROWSER_HEADERS, 25000);
+      if (res.status === 200 && res.text.length > 500) {
+        extractFromHtml(res.text, origUrl, items);
+      }
+      await sleep(500);
+    }
     await sleep(1000);
   }
 
-  await browser.close().catch(() => {});
+  console.log(`  CDX bulk subtotal: ${items.length} raw items`);
   return items;
-}
-
-async function autoScroll(page: Page) {
-  try {
-    await page.evaluate(async () => {
-      await new Promise<void>(resolve => {
-        let total = 0;
-        const id = setInterval(() => {
-          window.scrollBy(0, 700);
-          total += 700;
-          if (total >= document.body.scrollHeight) { clearInterval(id); resolve(); }
-        }, 120);
-        setTimeout(() => { clearInterval(id); resolve(); }, 30000);
-      });
-    });
-  } catch { /* ignore */ }
-}
-
-async function clickLoadMore(page: Page) {
-  const selectors = [
-    'button:has-text("Load More")', 'button:has-text("See More")',
-    'button:has-text("Show More")', 'button:has-text("View More")',
-    '[data-testid*="load"]', '.load-more', '[class*="loadmore"]',
-  ];
-  for (let i = 0; i < 8; i++) {
-    let clicked = false;
-    for (const sel of selectors) {
-      try {
-        const btn = page.locator(sel).first();
-        if (await btn.isVisible({ timeout: 1500 })) {
-          await btn.scrollIntoViewIfNeeded();
-          await btn.click();
-          await sleep(2000);
-          await autoScroll(page);
-          clicked = true;
-          break;
-        }
-      } catch { /* not found */ }
-    }
-    if (!clicked) break;
-  }
-}
-
-async function extractDom(page: Page, source: string): Promise<ContentItem[]> {
-  try {
-    return await page.evaluate((src: string): ContentItem[] => {
-      const items: ContentItem[] = [];
-      const seen = new Set<string>();
-      const sel = [
-        '[class*="ContentCard"]','[class*="content-card"]','[class*="SeriesCard"]',
-        '[class*="MovieCard"]','[class*="ProgramCard"]','[class*="MediaCard"]',
-        '[data-testid*="card"]','[data-testid*="content"]',
-        'li[class*="item"] a', 'article',
-      ].join(',');
-
-      document.querySelectorAll(sel).forEach(card => {
-        const a   = (card.tagName === 'A' ? card : card.querySelector('a')) as HTMLAnchorElement | null;
-        const img = card.querySelector('img') as HTMLImageElement | null;
-        const titleEl = card.querySelector('[class*="itle"], [class*="name"], h2, h3, h4, strong, span');
-        const title = titleEl?.textContent?.trim() ?? '';
-        const href  = a?.href ?? '';
-        const poster = img?.src ?? (img as any)?.dataset?.src ?? '';
-        const key   = href || title;
-        if (!key || seen.has(key) || !title || title.length < 2) return;
-        seen.add(key);
-        const m = href.match(/\/(\d{5,})/);
-        const id = m?.[1] ?? title.toLowerCase().replace(/\s+/g,'-');
-        const type = href.includes('/movie') ? 'movie' :
-                     href.includes('/series') ? 'series' :
-                     href.includes('/program') ? 'program' :
-                     href.includes('/kids') ? 'kids' : 'series';
-        items.push({
-          id, title, titleAr: '', type, genres: [], moods: [], keywords: [],
-          poster: poster || `https://picsum.photos/seed/${id}/300/450`,
-          hero:   poster || `https://picsum.photos/seed/${id}h/1280/720`,
-          description: '', source: src,
-        });
-      });
-      return items;
-    }, source);
-  } catch { return []; }
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('═══════════════════════════════════════════');
-  console.log('     Shahid MBC Full Library Scraper');
-  console.log(`     ${new Date().toISOString()}`);
-  console.log('═══════════════════════════════════════════\n');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('      Shahid MBC Library Scraper — Wayback Edition');
+  console.log(`      ${new Date().toISOString()}`);
+  console.log('═══════════════════════════════════════════════════════\n');
+
   ensureDir(OUTPUT_DIR);
 
-  const debug: DebugInfo = { apiDiscovery: [], browserPages: [] };
-  const allItems: ContentItem[] = [];
+  // Write sentinel file immediately so downstream steps never fail on missing file
+  fs.writeFileSync(OUTPUT_FILE, JSON.stringify({
+    scrapedAt: new Date().toISOString(), totalItems: 0, byType: {}, genres: [], countries: [], apiEndpoints: [], items: []
+  }, null, 2));
 
-  // Phase 1
-  const apiItems = await runDirectApi(debug);
-  allItems.push(...apiItems);
-  console.log(`\n  API total raw items: ${apiItems.length}`);
+  const debug: DebugEntry[] = [];
+  const all:   ContentItem[] = [];
 
-  // Phase 2
-  const browserItems = await runBrowser(debug);
-  allItems.push(...browserItems);
-  console.log(`\n  Browser total raw items: ${browserItems.length}`);
+  // Phase 1: direct API (usually 403 from cloud, but worth trying)
+  all.push(...await runDirectApi(debug));
 
-  // Deduplicate
-  const items = deduplicate(allItems);
-  console.log(`\n  After deduplication: ${items.length}`);
+  // Phase 2: Wayback Machine page snapshots
+  all.push(...await runWayback(debug));
 
-  // Stats
-  const byType: Record<string, number> = {};
-  const genreSet    = new Set<string>();
-  const countrySet  = new Set<string>();
-  const endpointSet = new Set<string>();
+  // Phase 3: Wayback CDX bulk enumeration of individual content pages
+  all.push(...await runWaybackCdxBulk(debug));
+
+  const items = deduplicate(all);
+  console.log(`\n  Deduplicated total: ${items.length} items`);
+
+  // Build stats
+  const byType: Record<string, number>  = {};
+  const genreSet   = new Set<string>();
+  const countrySet = new Set<string>();
   for (const i of items) {
     byType[i.type] = (byType[i.type] ?? 0) + 1;
     i.genres.forEach(g => g && genreSet.add(g));
     if (i.country) countrySet.add(i.country);
   }
-  for (const d of debug.apiDiscovery) {
-    try { endpointSet.add(new URL(d.finalUrl).pathname); } catch { /* */ }
-  }
 
   const output = {
-    scrapedAt: new Date().toISOString(),
-    totalItems: items.length,
+    scrapedAt:    new Date().toISOString(),
+    totalItems:   items.length,
     byType,
-    genres:      [...genreSet].sort(),
-    countries:   [...countrySet].sort(),
-    apiEndpoints:[...endpointSet].sort(),
+    genres:       [...genreSet].sort(),
+    countries:    [...countrySet].sort(),
+    apiEndpoints: [...new Set(debug.filter(d => d.method === 'direct-api').map(d => d.url))],
     items,
   };
 
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output, null, 2));
   fs.writeFileSync(DEBUG_FILE,  JSON.stringify(debug,  null, 2));
 
-  console.log('\n═══════════════ RESULTS ═══════════════════');
+  console.log('\n═══════════════════ RESULTS ══════════════════════════');
   console.log(`  Total items   : ${output.totalItems}`);
   console.log(`  By type       :`, byType);
   console.log(`  Genres        : ${output.genres.length}`);
   console.log(`  Countries     : ${output.countries.length}`);
-  console.log(`  Output        : ${OUTPUT_FILE}`);
-  console.log(`  Debug log     : ${DEBUG_FILE}`);
   if (items.length > 0) {
     console.log('\n  Sample titles:');
-    items.slice(0, 15).forEach(i => console.log(`    [${i.type.padEnd(8)}] ${(i.title || i.titleAr).slice(0,50)}`));
+    items.slice(0, 20).forEach(i =>
+      console.log(`    [${i.type.padEnd(8)}] ${(i.title || i.titleAr).slice(0, 50)}`)
+    );
   } else {
-    console.log('\n  ⚠ No items extracted.');
-    console.log('  Check debug log for API redirect chains and browser page info.');
-    console.log('  Debug API discovery:');
-    debug.apiDiscovery.slice(0,3).forEach(d =>
-      console.log(`    ${d.status}  ${d.path}  →  ${d.finalUrl}  loc: ${d.location}`)
+    console.log('\n  ⚠ 0 items — check debug log for Wayback snapshot details');
+    const waybackEntries = debug.filter(d => d.method === 'wayback');
+    waybackEntries.forEach(e =>
+      console.log(`    ${e.status}  ${e.url}  snapshot: ${e.snapshot.slice(-50) || 'none'}`)
     );
   }
 }
