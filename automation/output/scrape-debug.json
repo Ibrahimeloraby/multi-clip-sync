@@ -1,155 +1,121 @@
-{
-  "apiDiscovery": [
-    {
-      "path": "/api/v2/page/home",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/page/home?language=en"
-    },
-    {
-      "path": "/api/v2/page/home?language=en",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/page/home?language=en"
-    },
-    {
-      "path": "/api/v2/page/series?language=en&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/page/series?language=en&limit=48"
-    },
-    {
-      "path": "/api/v2/page/movies?language=en&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/page/movies?language=en&limit=48"
-    },
-    {
-      "path": "/api/v2/page/programs?language=en&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/page/programs?language=en&limit=48"
-    },
-    {
-      "path": "/api/v2/page/kids?language=en&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/page/kids?language=en&limit=48"
-    },
-    {
-      "path": "/api/v2/page/trending?language=en&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/page/trending?language=en&limit=48"
-    },
-    {
-      "path": "/api/v2/channels?language=en",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/channels?language=en"
-    },
-    {
-      "path": "/api/v2/genres?language=en&type=series",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/genres?language=en&type=series"
-    },
-    {
-      "path": "/api/v2/genres?language=en&type=movie",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/genres?language=en&type=movie"
-    },
-    {
-      "path": "/api/v2/content/series?language=en&page=1&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/series?language=en&page=1&limit=48"
-    },
-    {
-      "path": "/api/v2/content/series?language=en&page=2&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/series?language=en&page=2&limit=48"
-    },
-    {
-      "path": "/api/v2/content/series?language=en&page=3&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/series?language=en&page=3&limit=48"
-    },
-    {
-      "path": "/api/v2/content/series?language=en&page=4&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/series?language=en&page=4&limit=48"
-    },
-    {
-      "path": "/api/v2/content/movies?language=en&page=1&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=1&limit=48"
-    },
-    {
-      "path": "/api/v2/content/movies?language=en&page=2&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=2&limit=48"
-    },
-    {
-      "path": "/api/v2/content/movies?language=en&page=3&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=3&limit=48"
-    },
-    {
-      "path": "/api/v2/content/programs?language=en&page=1&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/programs?language=en&page=1&limit=48"
-    },
-    {
-      "path": "/api/v2/content/programs?language=en&page=2&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/programs?language=en&page=2&limit=48"
-    },
-    {
-      "path": "/api/v2/content/kids?language=en&page=1&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/kids?language=en&page=1&limit=48"
-    },
-    {
-      "path": "/api/v2/content/kids?language=en&page=2&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/kids?language=en&page=2&limit=48"
-    },
-    {
-      "path": "/api/v2/content/trending?language=en&page=1&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/trending?language=en&page=1&limit=48"
-    },
-    {
-      "path": "/api/v2/content/free?language=en&page=1&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/free?language=en&page=1&limit=48"
-    },
-    {
-      "path": "/api/v2/content/free?language=en&page=2&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/free?language=en&page=2&limit=48"
-    },
-    {
-      "path": "/api/v2/content/new?language=en&page=1&limit=48",
-      "status": 403,
-      "location": "",
-      "finalUrl": "https://shahid.mbc.net/api/v2/content/new?language=en&page=1&limit=48"
-    }
-  ],
-  "browserPages": []
-}
+[
+  {
+    "url": "https://shahid.mbc.net/api/v2/page/home?language=en",
+    "method": "direct-api",
+    "status": 0,
+    "snapshot": "https://shahid.mbc.net/api/v2/page/home?language=en",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/api/v2/page/series?language=en&limit=48",
+    "method": "direct-api",
+    "status": 0,
+    "snapshot": "https://shahid.mbc.net/api/v2/page/series?language=en&limit=48",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/api/v2/page/movies?language=en&limit=48",
+    "method": "direct-api",
+    "status": 0,
+    "snapshot": "https://shahid.mbc.net/api/v2/page/movies?language=en&limit=48",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/api/v2/content/series?language=en&page=1&limit=48",
+    "method": "direct-api",
+    "status": 0,
+    "snapshot": "https://shahid.mbc.net/api/v2/content/series?language=en&page=1&limit=48",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/api/v2/content/series?language=en&page=2&limit=48",
+    "method": "direct-api",
+    "status": 0,
+    "snapshot": "https://shahid.mbc.net/api/v2/content/series?language=en&page=2&limit=48",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=1&limit=48",
+    "method": "direct-api",
+    "status": 0,
+    "snapshot": "https://shahid.mbc.net/api/v2/content/movies?language=en&page=1&limit=48",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/api/v2/content/trending?language=en&page=1&limit=48",
+    "method": "direct-api",
+    "status": 0,
+    "snapshot": "https://shahid.mbc.net/api/v2/content/trending?language=en&page=1&limit=48",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/en",
+    "method": "wayback-2024",
+    "status": 200,
+    "snapshot": "20240101055903",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/en",
+    "method": "wayback-2022",
+    "status": 200,
+    "snapshot": "20220105082820",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/en/series",
+    "method": "wayback-2026",
+    "status": 200,
+    "snapshot": "20260130032243",
+    "items": 5
+  },
+  {
+    "url": "https://shahid.mbc.net/en/series",
+    "method": "wayback-2023",
+    "status": 200,
+    "snapshot": "20230315070202",
+    "items": 0
+  },
+  {
+    "url": "https://shahid.mbc.net/en/free",
+    "method": "wayback-2023",
+    "status": 200,
+    "snapshot": "20230514225723",
+    "items": 0
+  },
+  {
+    "url": "shahid.mbc.net/en/series/*/*",
+    "method": "cdx-enum",
+    "status": 0,
+    "snapshot": "",
+    "items": 0
+  },
+  {
+    "url": "shahid.mbc.net/en/movie/*/*",
+    "method": "cdx-enum",
+    "status": 0,
+    "snapshot": "",
+    "items": 0
+  },
+  {
+    "url": "shahid.mbc.net/en/program/*/*",
+    "method": "cdx-enum",
+    "status": 0,
+    "snapshot": "",
+    "items": 0
+  },
+  {
+    "url": "shahid.mbc.net/ar/series/*/*",
+    "method": "cdx-enum",
+    "status": 0,
+    "snapshot": "",
+    "items": 0
+  },
+  {
+    "url": "shahid.mbc.net/ar/movie/*/*",
+    "method": "cdx-enum",
+    "status": 0,
+    "snapshot": "",
+    "items": 0
+  }
+]
