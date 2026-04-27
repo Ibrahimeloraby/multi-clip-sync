@@ -4,45 +4,45 @@
 
 @layer base {
   :root {
-    /* Warm cream background, espresso text, golden accent */
-    --background: 42 35% 97%;
-    --foreground: 15 50% 10%;
+    /* MBRL Brand: Deep navy primary, UAE gold accent, warm cream background */
+    --background: 40 18% 98%;
+    --foreground: 220 30% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 15 50% 10%;
+    --card-foreground: 220 30% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 15 50% 10%;
+    --popover-foreground: 220 30% 10%;
 
-    --primary: 15 47% 14%;
-    --primary-foreground: 42 35% 97%;
+    --primary: 212 55% 12%;
+    --primary-foreground: 40 20% 96%;
 
-    --secondary: 38 30% 88%;
-    --secondary-foreground: 15 47% 14%;
+    --secondary: 38 30% 90%;
+    --secondary-foreground: 212 55% 12%;
 
-    --muted: 40 22% 93%;
-    --muted-foreground: 20 15% 45%;
+    --muted: 38 12% 94%;
+    --muted-foreground: 220 15% 45%;
 
-    --accent: 38 62% 55%;
-    --accent-foreground: 15 47% 14%;
+    --accent: 38 52% 47%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 38 22% 86%;
-    --input: 38 22% 86%;
-    --ring: 38 62% 55%;
+    --border: 38 15% 87%;
+    --input: 38 15% 87%;
+    --ring: 38 52% 47%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 42 35% 97%;
-    --sidebar-foreground: 15 50% 10%;
-    --sidebar-primary: 15 47% 14%;
-    --sidebar-primary-foreground: 42 35% 97%;
-    --sidebar-accent: 38 30% 88%;
-    --sidebar-accent-foreground: 15 47% 14%;
-    --sidebar-border: 38 22% 86%;
-    --sidebar-ring: 38 62% 55%;
+    --sidebar-background: 212 55% 12%;
+    --sidebar-foreground: 40 20% 96%;
+    --sidebar-primary: 38 52% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 212 40% 20%;
+    --sidebar-accent-foreground: 40 20% 96%;
+    --sidebar-border: 212 40% 20%;
+    --sidebar-ring: 38 52% 47%;
   }
 
   * {
@@ -51,11 +51,16 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1, h2, h3, h4 {
     font-family: 'Playfair Display', serif;
+  }
+
+  [lang="ar"], .arabic {
+    font-family: 'Noto Naskh Arabic', serif;
+    direction: rtl;
   }
 }
 
@@ -63,7 +68,10 @@
   .font-serif {
     font-family: 'Playfair Display', serif;
   }
-
+  .font-arabic {
+    font-family: 'Noto Naskh Arabic', serif;
+    direction: rtl;
+  }
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -71,18 +79,22 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
-
   .line-clamp-3 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+  }
+  .gold-gradient {
+    background: linear-gradient(135deg, #B8963E 0%, #E8C872 50%, #B8963E 100%);
+  }
+  .navy-gradient {
+    background: linear-gradient(135deg, #0D1B2A 0%, #1A3352 60%, #0D1B2A 100%);
   }
 }

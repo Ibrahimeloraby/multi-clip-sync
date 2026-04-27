@@ -6,8 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./pages/Home";
 import MoodRecommender from "./pages/MoodRecommender";
-import Reviews from "./pages/Reviews";
-import NewReleases from "./pages/NewReleases";
+import Collections from "./pages/Collections";
+import Membership from "./pages/Membership";
+import Events from "./pages/Events";
+import PlanVisit from "./pages/PlanVisit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,8 +24,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/mood" element={<MoodRecommender />} />
-            <Route path="/reviews" element={<Reviews />} />
-            <Route path="/new-releases" element={<NewReleases />} />
+            <Route path="/collections" element={<Collections />} />
+            <Route path="/membership" element={<Membership />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/visit" element={<PlanVisit />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
