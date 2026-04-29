@@ -11,6 +11,7 @@ import Install from "./pages/Install";
 import SetupPage from "./pages/SetupPage";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
+import CRMDashboard from "./pages/CRMDashboard";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,9 @@ const App = () => (
             {/* Session routes */}
             <Route path="/session/:id" element={<SessionView />} />
             <Route path="/q/:code" element={<QuickJoin />} />
+
+            {/* CRM module */}
+            <Route path="/crm" element={<CRMDashboard />} />
 
             {/* Utility routes */}
             <Route path="/install" element={<Install />} />
