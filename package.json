@@ -21,6 +21,7 @@
     "automate:all": "npx tsx automation/run.ts all"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1",
     "@capacitor/cli": "^8.0.2",
     "@capacitor/core": "^8.0.2",
     "@capacitor/ios": "^8.0.2",

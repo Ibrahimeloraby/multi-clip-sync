@@ -3,14 +3,18 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import CameraScreen from "./pages/CameraScreen";
-import LibraryScreen from "./pages/LibraryScreen";
-import SessionView from "./pages/SessionView";
-import QuickJoin from "./pages/QuickJoin";
-import Install from "./pages/Install";
-import SetupPage from "./pages/SetupPage";
-import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
+import NotFound from "./pages/NotFound";
+
+// B2B Platform
+import B2BLayout from "./components/b2b/Layout";
+import Dashboard from "./pages/b2b/Dashboard";
+import Deals from "./pages/b2b/Deals";
+import Proposals from "./pages/b2b/Proposals";
+import Approvals from "./pages/b2b/Approvals";
+import Outreach from "./pages/b2b/Outreach";
+import Catalog from "./pages/b2b/Catalog";
+import Companies from "./pages/b2b/Companies";
 
 const queryClient = new QueryClient();
 
@@ -22,20 +26,19 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Main 2-screen app */}
-            <Route path="/" element={<CameraScreen />} />
-            <Route path="/videos" element={<LibraryScreen />} />
+            {/* Redirect root to B2B platform */}
+            <Route path="/" element={<Navigate to="/b2b" replace />} />
 
-            {/* Redirect old routes */}
-            <Route path="/feed" element={<Navigate to="/videos?tab=feed" replace />} />
-
-            {/* Session routes */}
-            <Route path="/session/:id" element={<SessionView />} />
-            <Route path="/q/:code" element={<QuickJoin />} />
-
-            {/* Utility routes */}
-            <Route path="/install" element={<Install />} />
-            <Route path="/setup" element={<SetupPage />} />
+            {/* B2B Platform */}
+            <Route path="/b2b" element={<B2BLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="deals" element={<Deals />} />
+              <Route path="proposals" element={<Proposals />} />
+              <Route path="approvals" element={<Approvals />} />
+              <Route path="outreach" element={<Outreach />} />
+              <Route path="catalog" element={<Catalog />} />
+              <Route path="companies" element={<Companies />} />
+            </Route>
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
