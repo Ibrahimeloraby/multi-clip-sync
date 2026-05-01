@@ -11,6 +11,9 @@ import Install from "./pages/Install";
 import SetupPage from "./pages/SetupPage";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
+import RecommendationsHome from "./pages/RecommendationsHome";
+import TasteQuiz from "./pages/TasteQuiz";
+import RecommendationResults from "./pages/RecommendationResults";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +35,11 @@ const App = () => (
             {/* Session routes */}
             <Route path="/session/:id" element={<SessionView />} />
             <Route path="/q/:code" element={<QuickJoin />} />
+
+            {/* Recommendations */}
+            <Route path="/recommendations" element={<RecommendationsHome />} />
+            <Route path="/recommendations/quiz" element={<TasteQuiz />} />
+            <Route path="/recommendations/:vertical" element={<RecommendationResults />} />
 
             {/* Utility routes */}
             <Route path="/install" element={<Install />} />
