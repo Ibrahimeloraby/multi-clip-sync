@@ -2,48 +2,49 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import CameraScreen from "./pages/CameraScreen";
-import LibraryScreen from "./pages/LibraryScreen";
-import SessionView from "./pages/SessionView";
-import QuickJoin from "./pages/QuickJoin";
-import Install from "./pages/Install";
-import SetupPage from "./pages/SetupPage";
-import NotFound from "./pages/NotFound";
-import ErrorBoundary from "./components/ErrorBoundary";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AppShell } from "@/components/layout/AppShell";
+import Dashboard from "@/pages/Dashboard";
+import Customers from "@/pages/Customers";
+import JourneyMap from "@/pages/JourneyMap";
+import Segments from "@/pages/Segments";
+import Predictions from "@/pages/Predictions";
+import AIAgent from "@/pages/AIAgent";
+import Connections from "@/pages/Connections";
+import Alerts from "@/pages/Alerts";
+import Settings from "@/pages/Settings";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AppShell>
           <Routes>
-            {/* Main 2-screen app */}
-            <Route path="/" element={<CameraScreen />} />
-            <Route path="/videos" element={<LibraryScreen />} />
-
-            {/* Redirect old routes */}
-            <Route path="/feed" element={<Navigate to="/videos?tab=feed" replace />} />
-
-            {/* Session routes */}
-            <Route path="/session/:id" element={<SessionView />} />
-            <Route path="/q/:code" element={<QuickJoin />} />
-
-            {/* Utility routes */}
-            <Route path="/install" element={<Install />} />
-            <Route path="/setup" element={<SetupPage />} />
-
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/journey" element={<JourneyMap />} />
+            <Route path="/segments" element={<Segments />} />
+            <Route path="/predictions" element={<Predictions />} />
+            <Route path="/agent" element={<AIAgent />} />
+            <Route path="/connections" element={<Connections />} />
+            <Route path="/alerts" element={<Alerts />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
+        </AppShell>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;

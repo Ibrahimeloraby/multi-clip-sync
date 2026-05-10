@@ -6,307 +6,302 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// ============================================================
+// AI Customer Journey Platform — Table Types
+// ============================================================
+
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+  industry: string | null
+  plan: string
+  settings: Json
+  created_at: string
+  updated_at: string
+}
+
+export interface OrganizationMember {
+  id: string
+  organization_id: string
+  user_id: string
+  role: 'owner' | 'admin' | 'analyst' | 'member'
+  created_at: string
+}
+
+export interface DataConnection {
+  id: string
+  organization_id: string
+  name: string
+  connector_type: 'snowflake' | 'bigquery' | 'redshift' | 'clickhouse' | 'postgres' | 'databricks'
+  credentials: Json
+  status: 'pending' | 'active' | 'error' | 'disconnected'
+  last_tested_at: string | null
+  last_sync_at: string | null
+  schema_discovered: boolean
+  field_mappings: Json
+  metadata: Json
+  error_message: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EventSchema {
+  id: string
+  organization_id: string
+  connection_id: string
+  table_schema: string
+  table_name: string
+  columns: Json
+  row_count_estimate: number | null
+  suggested_mappings: Json
+  discovered_at: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Customer {
+  id: string
+  organization_id: string
+  external_id: string | null
+  email: string | null
+  name: string | null
+  phone: string | null
+  country: string | null
+  city: string | null
+  first_seen_at: string | null
+  last_seen_at: string | null
+  total_revenue: number
+  transaction_count: number
+  attributes: Json
+  pii_masked: boolean
+  gdpr_erased: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Event {
+  id: string
+  organization_id: string
+  customer_id: string | null
+  external_customer_id: string | null
+  connection_id: string | null
+  channel: string
+  event_type: string
+  revenue: number | null
+  currency: string | null
+  properties: Json
+  session_id: string | null
+  occurred_at: string
+  ingested_at: string
+  created_at: string
+}
+
+export interface CustomerSegment {
+  id: string
+  organization_id: string
+  name: string
+  description: string | null
+  segment_type: 'manual' | 'ai_generated' | 'rfm' | 'behavioral'
+  criteria: Json
+  member_count: number
+  avg_clv: number | null
+  avg_churn_rate: number | null
+  color: string | null
+  is_active: boolean
+  last_computed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SegmentMembership {
+  id: string
+  organization_id: string
+  segment_id: string
+  customer_id: string
+  score: number | null
+  added_at: string
+}
+
+export interface KPISnapshot {
+  id: string
+  organization_id: string
+  snapshot_date: string
+  total_customers: number
+  active_customers_30d: number
+  new_customers: number
+  churned_customers: number
+  churn_rate: number | null
+  total_revenue: number
+  avg_revenue_per_customer: number | null
+  avg_clv: number | null
+  avg_order_value: number | null
+  win_back_rate: number | null
+  nps_score: number | null
+  retention_rate_30d: number | null
+  retention_rate_90d: number | null
+  mom_growth_rate: number | null
+  metadata: Json
+  created_at: string
+}
+
+export interface CustomerScore {
+  id: string
+  organization_id: string
+  customer_id: string
+  churn_score: number
+  clv_score: number
+  winback_score: number
+  rfm_recency: number | null
+  rfm_frequency: number | null
+  rfm_monetary: number | null
+  rfm_segment: string | null
+  engagement_score: number | null
+  nps_predictor: number | null
+  computed_at: string
+  model_version: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Prediction {
+  id: string
+  organization_id: string
+  customer_id: string
+  prediction_type: 'churn_date' | 'next_purchase' | 'predicted_clv' | 'next_best_action'
+  predicted_value: string | null
+  predicted_date: string | null
+  confidence: number | null
+  explanation: string | null
+  features_snapshot: Json
+  model_version: string
+  expires_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AgentConversation {
+  id: string
+  organization_id: string
+  user_id: string
+  title: string | null
+  messages: Json
+  context: Json
+  is_pinned: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Alert {
+  id: string
+  organization_id: string
+  name: string
+  metric: string
+  operator: 'gt' | 'lt' | 'gte' | 'lte' | 'eq'
+  threshold: number
+  severity: 'critical' | 'high' | 'medium' | 'low'
+  notification_channels: Json
+  is_active: boolean
+  triggered_count: number
+  last_triggered_at: string | null
+  last_value: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AlertHistory {
+  id: string
+  organization_id: string
+  alert_id: string
+  triggered_at: string
+  metric_value: number
+  threshold_value: number
+  resolved_at: string | null
+  notes: string | null
+  created_at: string
+}
+
+// ============================================================
+// Legacy types (kept for backward compatibility)
+// ============================================================
+
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          device_id: string
-          id: string
-          updated_at: string
-          username: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          device_id: string
-          id: string
-          updated_at?: string
-          username: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          device_id?: string
-          id?: string
-          updated_at?: string
-          username?: string
-        }
+      organizations: {
+        Row: Organization
+        Insert: Partial<Organization> & { name: string; slug: string }
+        Update: Partial<Organization>
         Relationships: []
       }
-      session_limits: {
-        Row: {
-          created_at: string
-          max_contributors: number
-          max_video_duration: number
-          session_id: string
-        }
-        Insert: {
-          created_at?: string
-          max_contributors?: number
-          max_video_duration?: number
-          session_id: string
-        }
-        Update: {
-          created_at?: string
-          max_contributors?: number
-          max_video_duration?: number
-          session_id?: string
-        }
+      data_connections: {
+        Row: DataConnection
+        Insert: Partial<DataConnection> & { organization_id: string; name: string; connector_type: string }
+        Update: Partial<DataConnection>
         Relationships: [
-          {
-            foreignKeyName: "session_limits_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: true
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
+          { foreignKeyName: "data_connections_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] }
         ]
       }
-      session_participants: {
-        Row: {
-          device_id: string
-          id: string
-          joined_at: string
-          session_id: string
-          user_id: string
-        }
-        Insert: {
-          device_id: string
-          id?: string
-          joined_at?: string
-          session_id: string
-          user_id: string
-        }
-        Update: {
-          device_id?: string
-          id?: string
-          joined_at?: string
-          session_id?: string
-          user_id?: string
-        }
+      customers: {
+        Row: Customer
+        Insert: Partial<Customer> & { organization_id: string }
+        Update: Partial<Customer>
         Relationships: [
-          {
-            foreignKeyName: "session_participants_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
+          { foreignKeyName: "customers_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] }
         ]
       }
-      sessions: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean
-          is_live: boolean
-          latitude: number | null
-          longitude: number | null
-          max_video_length: number
-          mode: string
-          name: string
-          owner_id: string
-          tier: string
-          time_code: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          is_live?: boolean
-          latitude?: number | null
-          longitude?: number | null
-          max_video_length?: number
-          mode: string
-          name: string
-          owner_id: string
-          tier?: string
-          time_code: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          is_live?: boolean
-          latitude?: number | null
-          longitude?: number | null
-          max_video_length?: number
-          mode?: string
-          name?: string
-          owner_id?: string
-          tier?: string
-          time_code?: string
-          updated_at?: string
-        }
+      events: {
+        Row: Event
+        Insert: Partial<Event> & { organization_id: string; channel: string; event_type: string; occurred_at: string }
+        Update: Partial<Event>
+        Relationships: [
+          { foreignKeyName: "events_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
+          { foreignKeyName: "events_customer_id_fkey"; columns: ["customer_id"]; isOneToOne: false; referencedRelation: "customers"; referencedColumns: ["id"] }
+        ]
+      }
+      customer_segments: {
+        Row: CustomerSegment
+        Insert: Partial<CustomerSegment> & { organization_id: string; name: string }
+        Update: Partial<CustomerSegment>
+        Relationships: [
+          { foreignKeyName: "customer_segments_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] }
+        ]
+      }
+      kpi_snapshots: {
+        Row: KPISnapshot
+        Insert: Partial<KPISnapshot> & { organization_id: string; snapshot_date: string }
+        Update: Partial<KPISnapshot>
         Relationships: []
       }
-      synced_sessions: {
-        Row: {
-          created_at: string
-          duration: number
-          export_format: string
-          has_watermark: boolean
-          id: string
-          session_id: string
-          storage_path: string
-        }
-        Insert: {
-          created_at?: string
-          duration: number
-          export_format?: string
-          has_watermark?: boolean
-          id?: string
-          session_id: string
-          storage_path: string
-        }
-        Update: {
-          created_at?: string
-          duration?: number
-          export_format?: string
-          has_watermark?: boolean
-          id?: string
-          session_id?: string
-          storage_path?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "synced_sessions_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-        ]
+      customer_scores: {
+        Row: CustomerScore
+        Insert: Partial<CustomerScore> & { organization_id: string; customer_id: string }
+        Update: Partial<CustomerScore>
+        Relationships: []
       }
-      videos: {
-        Row: {
-          device_id: string
-          duration: number
-          id: string
-          latitude: number | null
-          longitude: number | null
-          published_at: string | null
-          published_to_feed: boolean
-          session_id: string
-          storage_path: string
-          thumbnail_url: string | null
-          uploaded_at: string
-          user_id: string
-        }
-        Insert: {
-          device_id: string
-          duration: number
-          id?: string
-          latitude?: number | null
-          longitude?: number | null
-          published_at?: string | null
-          published_to_feed?: boolean
-          session_id: string
-          storage_path: string
-          thumbnail_url?: string | null
-          uploaded_at?: string
-          user_id: string
-        }
-        Update: {
-          device_id?: string
-          duration?: number
-          id?: string
-          latitude?: number | null
-          longitude?: number | null
-          published_at?: string | null
-          published_to_feed?: boolean
-          session_id?: string
-          storage_path?: string
-          thumbnail_url?: string | null
-          uploaded_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "videos_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "videos_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+      agent_conversations: {
+        Row: AgentConversation
+        Insert: Partial<AgentConversation> & { organization_id: string; user_id: string }
+        Update: Partial<AgentConversation>
+        Relationships: []
       }
-      webrtc_signals: {
-        Row: {
-          created_at: string
-          from_user_id: string
-          id: string
-          session_id: string
-          signal_data: Json
-          signal_type: string
-          to_user_id: string
-        }
-        Insert: {
-          created_at?: string
-          from_user_id: string
-          id?: string
-          session_id: string
-          signal_data: Json
-          signal_type: string
-          to_user_id: string
-        }
-        Update: {
-          created_at?: string
-          from_user_id?: string
-          id?: string
-          session_id?: string
-          signal_data?: Json
-          signal_type?: string
-          to_user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "webrtc_signals_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-        ]
+      alerts: {
+        Row: Alert
+        Insert: Partial<Alert> & { organization_id: string; name: string; metric: string; operator: string; threshold: number }
+        Update: Partial<Alert>
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      check_contributor_limit: {
-        Args: { p_session_id: string }
-        Returns: boolean
-      }
-      generate_time_code: {
-        Args: { device_uuid: string; session_uuid: string }
-        Returns: string
-      }
-      get_user_session_ids: { Args: { p_user_id: string }; Returns: string[] }
+      get_user_organization_ids: { Args: Record<string, never>; Returns: string[] }
+      compute_rfm: { Args: { p_org_id: string }; Returns: unknown[] }
+      get_churn_candidates: { Args: { p_org_id: string; p_threshold: number }; Returns: unknown[] }
     }
     Enums: {
       [_ in never]: never
@@ -318,7 +313,6 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
@@ -348,90 +342,6 @@ export type Tables<
       }
       ? R
       : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
