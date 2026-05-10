@@ -1,157 +1,91 @@
-// Application Constants
+import type { DocumentType, FileCategory, BusinessVertical } from "@/types";
 
-// Session & Video Limits
-export const SESSION_LIMITS = {
-  FREE: {
-    maxVideos: 5,
-    maxDuration: 60, // seconds
-    maxParticipants: 3,
-    maxStorage: 500 * 1024 * 1024, // 500MB
-  },
-  PRO: {
-    maxVideos: 25,
-    maxDuration: 300, // 5 minutes
-    maxParticipants: 10,
-    maxStorage: 5 * 1024 * 1024 * 1024, // 5GB
-  },
-  ENTERPRISE: {
-    maxVideos: -1, // unlimited
-    maxDuration: -1, // unlimited
-    maxParticipants: -1, // unlimited
-    maxStorage: -1, // unlimited
-  },
-} as const;
+export const APP_NAME = "Omniform";
+export const APP_TAGLINE = "AI-powered data collection and structuring";
 
-// Zoom Presets
-export const ZOOM_PRESETS = [
-  { label: '0.5x', value: 0.5 },
-  { label: '1x', value: 1 },
-  { label: '2x', value: 2 },
-  { label: '3x', value: 3 },
-] as const;
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  invoice: "Invoice",
+  receipt: "Receipt",
+  whatsapp_message: "WhatsApp Message",
+  voice_note: "Voice Note",
+  spreadsheet: "Spreadsheet",
+  pdf: "PDF Document",
+  screenshot: "Screenshot",
+  pos_transaction: "POS Transaction",
+  contract: "Contract",
+  other: "Other",
+};
 
-export const ZOOM_LIMITS = {
-  MIN: 0.5,
-  MAX: 5,
-  DEFAULT: 1,
-  PINCH_SENSITIVITY: 0.01,
-} as const;
+export const DOCUMENT_TYPE_COLORS: Record<DocumentType, string> = {
+  invoice: "bg-blue-100 text-blue-800",
+  receipt: "bg-green-100 text-green-800",
+  whatsapp_message: "bg-emerald-100 text-emerald-800",
+  voice_note: "bg-purple-100 text-purple-800",
+  spreadsheet: "bg-orange-100 text-orange-800",
+  pdf: "bg-red-100 text-red-800",
+  screenshot: "bg-yellow-100 text-yellow-800",
+  pos_transaction: "bg-cyan-100 text-cyan-800",
+  contract: "bg-indigo-100 text-indigo-800",
+  other: "bg-gray-100 text-gray-800",
+};
 
-// Video Quality Settings
-export const VIDEO_QUALITY = {
-  LOW: {
-    width: 640,
-    height: 480,
-    frameRate: 24,
-    bitrate: 1000000, // 1 Mbps
-  },
-  MEDIUM: {
-    width: 1280,
-    height: 720,
-    frameRate: 30,
-    bitrate: 2500000, // 2.5 Mbps
-  },
-  HIGH: {
-    width: 1920,
-    height: 1080,
-    frameRate: 30,
-    bitrate: 5000000, // 5 Mbps
-  },
-  ULTRA: {
-    width: 3840,
-    height: 2160,
-    frameRate: 30,
-    bitrate: 15000000, // 15 Mbps
-  },
-} as const;
+export const FILE_CATEGORY_LABELS: Record<FileCategory, string> = {
+  image: "Image",
+  audio: "Audio",
+  pdf: "PDF",
+  spreadsheet: "Spreadsheet",
+  text: "Text",
+  archive: "Archive",
+};
 
-// Playback Speed Options
-export const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
+export const MIME_TO_CATEGORY: Record<string, FileCategory> = {
+  "image/jpeg": "image",
+  "image/png": "image",
+  "image/gif": "image",
+  "image/webp": "image",
+  "image/heic": "image",
+  "audio/mpeg": "audio",
+  "audio/mp4": "audio",
+  "audio/ogg": "audio",
+  "audio/wav": "audio",
+  "audio/webm": "audio",
+  "audio/m4a": "audio",
+  "application/pdf": "pdf",
+  "application/vnd.ms-excel": "spreadsheet",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "spreadsheet",
+  "text/csv": "spreadsheet",
+  "text/plain": "text",
+  "application/zip": "archive",
+};
 
-// Filter Effects
-export const VIDEO_FILTERS = [
-  { id: 'none', label: 'None', filter: '' },
-  { id: 'grayscale', label: 'Grayscale', filter: 'grayscale(100%)' },
-  { id: 'sepia', label: 'Sepia', filter: 'sepia(100%)' },
-  { id: 'vintage', label: 'Vintage', filter: 'sepia(50%) contrast(90%) brightness(90%)' },
-  { id: 'warm', label: 'Warm', filter: 'sepia(30%) saturate(140%)' },
-  { id: 'cool', label: 'Cool', filter: 'hue-rotate(180deg) saturate(80%)' },
-  { id: 'bright', label: 'Bright', filter: 'brightness(130%) contrast(110%)' },
-  { id: 'dramatic', label: 'Dramatic', filter: 'contrast(150%) saturate(120%)' },
-  { id: 'muted', label: 'Muted', filter: 'saturate(50%) brightness(95%)' },
-  { id: 'noir', label: 'Noir', filter: 'grayscale(100%) contrast(130%)' },
-] as const;
+export const SUPPORTED_MIME_TYPES = Object.keys(MIME_TO_CATEGORY);
+export const MAX_FILE_SIZE_MB = 50;
+export const MAX_FILES_PER_UPLOAD = 20;
 
-// Geolocation Settings
-export const GEOLOCATION = {
-  TIMEOUT: 10000, // 10 seconds
-  MAX_AGE: 60000, // 1 minute
-  PROXIMITY_RADIUS: 100, // meters
-  HIGH_ACCURACY_THRESHOLD: 50, // meters
-} as const;
+export const VERTICAL_LABELS: Record<BusinessVertical, string> = {
+  retail: "Retail",
+  food_and_beverage: "Food & Beverage",
+  logistics: "Logistics",
+  finance: "Finance",
+  healthcare: "Healthcare",
+  real_estate: "Real Estate",
+  construction: "Construction",
+  custom: "Custom",
+};
 
-// WebRTC Configuration
-export const WEBRTC_CONFIG = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-  ],
-  iceCandidatePoolSize: 10,
-} as const;
+export const CONFIDENCE_THRESHOLDS = { high: 0.85, medium: 0.65, low: 0 };
 
-// UI Animation Durations (ms)
-export const ANIMATION_DURATION = {
-  FAST: 150,
-  NORMAL: 300,
-  SLOW: 500,
-  VERY_SLOW: 1000,
-} as const;
+export const CONFIDENCE_COLORS = {
+  high: "text-green-600 bg-green-50",
+  medium: "text-yellow-600 bg-yellow-50",
+  low: "text-red-600 bg-red-50",
+};
 
-// Local Storage Keys
-export const STORAGE_KEYS = {
-  USER_PREFERENCES: 'timecode_preferences',
-  DEVICE_ID: 'timecode_device_id',
-  LAST_SESSION: 'timecode_last_session',
-  CAMERA_SETTINGS: 'timecode_camera_settings',
-  THEME: 'timecode_theme',
-} as const;
-
-// API Rate Limits
-export const RATE_LIMITS = {
-  UPLOAD_INTERVAL: 1000, // 1 second between uploads
-  FETCH_INTERVAL: 500, // 500ms between fetches
-  REALTIME_DEBOUNCE: 100, // 100ms debounce for realtime updates
-} as const;
-
-// Social Features
-export const SOCIAL = {
-  MAX_COMMENT_LENGTH: 500,
-  MAX_COMMENTS_PER_VIDEO: 100,
-  COMMENTS_PAGE_SIZE: 20,
-} as const;
-
-// Error Messages
-export const ERROR_MESSAGES = {
-  CAMERA_ACCESS_DENIED: 'Camera access was denied. Please enable camera permissions.',
-  MICROPHONE_ACCESS_DENIED: 'Microphone access was denied. Please enable microphone permissions.',
-  LOCATION_ACCESS_DENIED: 'Location access was denied. Some features may be limited.',
-  UPLOAD_FAILED: 'Failed to upload video. Please try again.',
-  SESSION_NOT_FOUND: 'Session not found or has expired.',
-  SESSION_FULL: 'This session has reached its participant limit.',
-  NETWORK_ERROR: 'Network error. Please check your connection.',
-  UNKNOWN_ERROR: 'An unexpected error occurred. Please try again.',
-} as const;
-
-// Time Code Format
-export const TIME_CODE_FORMAT = {
-  PREFIX: 'TC',
-  SEPARATOR: '-',
-  RANDOM_LENGTH: 4,
-} as const;
-
-// Export types for TypeScript
-export type SessionTier = keyof typeof SESSION_LIMITS;
-export type VideoQualityLevel = keyof typeof VIDEO_QUALITY;
-export type PlaybackSpeed = (typeof PLAYBACK_SPEEDS)[number];
-export type VideoFilter = (typeof VIDEO_FILTERS)[number];
+export const SOURCE_TYPE_LABELS: Record<string, string> = {
+  manual_upload: "Manual Upload",
+  whatsapp: "WhatsApp",
+  email: "Email",
+  google_drive: "Google Drive",
+  pos_webhook: "POS System",
+  api: "API",
+};
