@@ -11,6 +11,9 @@ import Install from "./pages/Install";
 import SetupPage from "./pages/SetupPage";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ShoppingHome from "./pages/ShoppingHome";
+import ShoppingResults from "./pages/ShoppingResults";
+import ShoppingWatchlist from "./pages/ShoppingWatchlist";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +39,11 @@ const App = () => (
             {/* Utility routes */}
             <Route path="/install" element={<Install />} />
             <Route path="/setup" element={<SetupPage />} />
+
+            {/* Shopping agent */}
+            <Route path="/shop" element={<ShoppingHome />} />
+            <Route path="/shop/results" element={<ShoppingResults />} />
+            <Route path="/shop/watchlist" element={<ShoppingWatchlist />} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
