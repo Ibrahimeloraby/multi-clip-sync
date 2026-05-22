@@ -15,13 +15,13 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "robots.txt"],
+      includeAssets: ["favicon.ico", "robots.txt", "apple-touch-icon.png"],
       manifest: {
-        name: "TimeCode",
-        short_name: "TimeCode",
-        description: "Multi-angle collaborative video recording",
-        theme_color: "#2563eb",
-        background_color: "#2563eb",
+        name: "LoyaltyOne",
+        short_name: "LoyaltyOne",
+        description: "UAE loyalty rewards aggregator - get the most from every purchase",
+        theme_color: "#1e40af",
+        background_color: "#f8fafc",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
@@ -48,13 +48,36 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "supabase-cache",
               expiration: {
-                maxEntries: 50,
+                maxEntries: 100,
                 maxAgeSeconds: 60 * 60 * 24,
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/functions\/v1\/recommend.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "recommendation-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 30,
+              },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "supabase-storage-cache",
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 7,
               },
             },
           },

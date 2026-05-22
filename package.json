@@ -9,6 +9,9 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "type-check": "tsc --noEmit",
     "db:migrate": "node scripts/run-migrations.js",
     "db:migrate:sql": "cat supabase/migrations/COMBINED_MIGRATIONS.sql",
     "db:migrate:psql": "psql $DATABASE_URL -f supabase/migrations/COMBINED_MIGRATIONS.sql",
@@ -81,6 +84,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "vitest": "^1.6.0",
+    "@vitest/ui": "^1.6.0",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.58.1",
     "@tailwindcss/typography": "^0.5.16",

@@ -1,5 +1,15 @@
 @tailwind base;
 
+/* Arabic font support */
+[dir="rtl"] body,
+[lang="ar"] body {
+  font-family: 'IBM Plex Arabic', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* RTL logical margin/padding helpers */
+[dir="rtl"] .ms-auto { margin-inline-start: auto; }
+[dir="rtl"] .me-auto { margin-inline-end: auto; }
+
 /* Safe area insets for notched devices */
 .safe-area-pt {
   padding-top: env(safe-area-inset-top);
