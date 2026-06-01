@@ -1,0 +1,115 @@
+import { formatDistanceToNow } from 'date-fns';
+import { mockConnectedSources } from '@/data/mockData';
+import SourceBadge from '@/components/hub/SourceBadge';
+
+const statusConfig = {
+  connected:    { label: 'Connected',    dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  pending:      { label: 'Pending',      dot: 'bg-amber-500',   badge: 'bg-amber-50 text-amber-700 border-amber-200' },
+  disconnected: { label: 'Disconnected', dot: 'bg-slate-300',   badge: 'bg-slate-50 text-slate-500 border-slate-200' },
+};
+
+export default function SourcesPage() {
+  const connected = mockConnectedSources.filter(s => s.status === 'connected');
+  const totalTagged = connected.reduce((s, c) => s + c.itemsTagged, 0);
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold text-slate-900">Data Sources</h1>
+        <p className="text-xs text-slate-500 mt-0.5">Connect your tools and instruct your team to use #learning or #agent to feed the brain</p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+          <div className="text-2xl font-bold text-emerald-600">{connected.length}</div>
+          <div className="text-xs text-slate-500">Sources Active</div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+          <div className="text-2xl font-bold text-violet-600">{totalTagged.toLocaleString()}</div>
+          <div className="text-xs text-slate-500">Items Tagged</div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+          <div className="text-2xl font-bold text-slate-700">84</div>
+          <div className="text-xs text-slate-500">Contributors</div>
+        </div>
+      </div>
+
+      {/* Tagging rule hero */}
+      <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl p-6 text-white">
+        <h2 className="text-lg font-semibold mb-2">The Golden Rule</h2>
+        <p className="text-violet-100 text-sm leading-relaxed max-w-2xl">
+          The AI brain <strong>only reads</strong> what is explicitly tagged. This keeps the knowledge clean, prevents noise, and ensures privacy.
+          Train your team: if it's worth remembering as a company — tag it.
+        </p>
+        <div className="grid grid-cols-2 gap-4 mt-5">
+          <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+            <code className="text-emerald-300 font-mono font-bold text-sm">#learning</code>
+            <p className="text-white/80 text-xs mt-1.5 leading-relaxed">
+              A decision, finding, or insight worth remembering. The AI stores and indexes it under the relevant department.
+            </p>
+            <p className="text-violet-200 text-xs mt-2 italic">
+              e.g. "LinkedIn CPL dropped 18% after audience update. #learning"
+            </p>
+          </div>
+          <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+            <code className="text-violet-300 font-mono font-bold text-sm">#agent</code>
+            <p className="text-white/80 text-xs mt-1.5 leading-relaxed">
+              Something that needs a recommendation, action, or follow-up from the AI agent or a team member.
+            </p>
+            <p className="text-violet-200 text-xs mt-2 italic">
+              e.g. "Lost Nordex due to SAP gap — need integration playbook. #agent"
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Source list */}
+      <div className="space-y-3">
+        <h2 className="font-semibold text-slate-900 text-sm">Connected Sources</h2>
+        {mockConnectedSources.map(source => {
+          const status = statusConfig[source.status];
+          return (
+            <div key={source.id} className="bg-white border border-slate-200 rounded-xl p-5 flex items-start gap-4">
+              <div className="shrink-0 mt-0.5">
+                <SourceBadge source={source.type} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-slate-900 text-sm">{source.label}</span>
+                  <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border font-medium ${status.badge}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                    {status.label}
+                  </span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 mt-2">
+                  <p className="text-xs text-slate-500 font-medium mb-0.5">How to tag in {source.label}</p>
+                  <p className="text-xs text-slate-700">{source.tagInstruction}</p>
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                {source.status === 'connected' ? (
+                  <>
+                    <p className="text-lg font-bold text-slate-900">{source.itemsTagged.toLocaleString()}</p>
+                    <p className="text-xs text-slate-400">tagged items</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Synced {formatDistanceToNow(source.lastSync, { addSuffix: true })}
+                    </p>
+                  </>
+                ) : (
+                  <button className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                    source.status === 'pending'
+                      ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                      : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
+                  }`}>
+                    {source.status === 'pending' ? 'Awaiting auth' : 'Connect'}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
