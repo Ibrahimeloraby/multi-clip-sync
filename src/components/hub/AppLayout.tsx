@@ -1,16 +1,27 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { departmentConfig } from '@/data/mockData';
+import { useKnowledgeStats } from '@/hooks/useKnowledgeItems';
 import type { Department } from '@/types/knowledge';
 
 const departments: Department[] = [
-  'marketing', 'sales', 'finance', 'hr', 'operations',
-  'procurement', 'compliance', 'risk', 'board', 'it',
+  'marketing','sales','finance','hr','operations',
+  'procurement','compliance','risk','board','it',
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { data: stats } = useKnowledgeStats();
+
+  const session = (() => {
+    try { return JSON.parse(localStorage.getItem('hub_session') ?? '{}'); }
+    catch { return {}; }
+  })();
+
+  const initials = session.email
+    ? session.email.split('@')[0].slice(0, 2).toUpperCase()
+    : 'IE';
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -19,7 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-slate-700">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
-            <span className="text-white text-sm font-bold">K</span>
+            <span className="text-white text-sm">🧠</span>
           </div>
           {!collapsed && (
             <div className="min-w-0">
@@ -29,18 +40,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
           <button
             onClick={() => setCollapsed(c => !c)}
-            className="ml-auto text-slate-400 hover:text-white transition-colors shrink-0"
+            className="ml-auto text-slate-400 hover:text-white transition-colors shrink-0 text-xs"
           >
-            {collapsed ? '→' : '←'}
+            {collapsed ? '›' : '‹'}
           </button>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2">
-          <NavItem to="/hub" icon="🏠" label="Dashboard" collapsed={collapsed} />
+          <NavItem to="/hub" icon="🏠" label="Dashboard" collapsed={collapsed} end />
           <NavItem to="/hub/chat" icon="🧠" label="AI Brain" collapsed={collapsed} highlight />
           <NavItem to="/hub/feed" icon="📡" label="Live Feed" collapsed={collapsed} />
           <NavItem to="/hub/sources" icon="🔌" label="Sources" collapsed={collapsed} />
+          <NavItem to="/hub/admin" icon="⚙️" label="Admin" collapsed={collapsed} />
 
           {!collapsed && (
             <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider px-2 pt-4 pb-1">
@@ -69,16 +81,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {!collapsed ? (
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                IE
+                {initials}
               </div>
-              <div className="min-w-0">
-                <p className="text-white text-xs font-medium truncate">Ibrahim E.</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-xs font-medium truncate">{session.email ?? 'Admin'}</p>
                 <p className="text-slate-400 text-xs">Admin</p>
               </div>
             </div>
           ) : (
             <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold mx-auto">
-              IE
+              {initials}
             </div>
           )}
         </div>
@@ -88,15 +100,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
         <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shrink-0">
-          <div>
-            <BreadcrumbTitle location={location.pathname} />
-          </div>
+          <BreadcrumbTitle path={location.pathname} />
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs text-emerald-700 font-medium">Live sync</span>
             </div>
-            <div className="text-xs text-slate-500">1,024 tagged learnings</div>
+            <div className="text-xs text-slate-500 font-medium">
+              {(stats?.total ?? 1024).toLocaleString()} tagged learnings
+            </div>
+            {stats?.pendingCount ? (
+              <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
+                <span className="text-xs text-amber-700 font-medium">{stats.pendingCount} pending</span>
+              </div>
+            ) : null}
           </div>
         </header>
 
@@ -109,14 +126,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 function NavItem({
-  to, icon, label, badge, collapsed, highlight,
+  to, icon, label, badge, collapsed, highlight, end,
 }: {
-  to: string; icon: string; label: string; badge?: number; collapsed?: boolean; highlight?: boolean;
+  to: string; icon: string; label: string; badge?: number;
+  collapsed?: boolean; highlight?: boolean; end?: boolean;
 }) {
   return (
     <NavLink
       to={to}
-      end={to === '/hub'}
+      end={end}
       className={({ isActive }) =>
         `flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-colors ${
           isActive
@@ -140,17 +158,16 @@ function NavItem({
   );
 }
 
-function BreadcrumbTitle({ location }: { location: string }) {
-  const parts = location.split('/').filter(Boolean);
-  if (parts.length <= 1) return <h1 className="text-slate-900 font-semibold text-sm">Dashboard</h1>;
-  const last = parts[parts.length - 1];
-  const titles: Record<string, string> = {
-    chat: 'AI Brain', feed: 'Live Feed', sources: 'Data Sources',
-    ...Object.fromEntries(Object.entries(departmentConfig).map(([k, v]) => [k, v.label])),
-  };
+const pathLabels: Record<string, string> = {
+  hub: 'Dashboard', chat: 'AI Brain', feed: 'Live Feed', sources: 'Data Sources', admin: 'Admin Panel',
+  ...Object.fromEntries(Object.entries(departmentConfig).map(([k, v]) => [k, v.label])),
+};
+
+function BreadcrumbTitle({ path }: { path: string }) {
+  const segments = path.split('/').filter(Boolean);
+  const last = segments[segments.length - 1];
+  const label = pathLabels[last] ?? last;
   return (
-    <h1 className="text-slate-900 font-semibold text-sm capitalize">
-      {titles[last] ?? last}
-    </h1>
+    <h1 className="text-slate-900 font-semibold text-sm capitalize">{label}</h1>
   );
 }
