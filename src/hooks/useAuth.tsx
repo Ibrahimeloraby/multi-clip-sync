@@ -11,17 +11,14 @@ export const useAuth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("Auth state changed:", event);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -33,38 +30,26 @@ export const useAuth = () => {
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            username
-          }
-        }
+          emailRedirectTo: `${window.location.origin}/`,
+          data: { username },
+        },
       });
 
       if (error) throw error;
 
       if (data.user) {
-        // Generate device ID
-        const deviceId = crypto.randomUUID();
-        
-        // Create profile
         const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            username,
-            device_id: deviceId
-          });
+          .from("fan_profiles")
+          .insert({ id: data.user.id, username });
 
-        if (profileError) throw profileError;
-        
-        toast.success("Account created! Welcome to Time Code");
-        navigate('/');
+        if (profileError && profileError.code !== "23505") throw profileError;
+
+        toast.success("Welcome to FanZone!");
+        navigate("/onboarding");
       }
 
       return { error: null };
@@ -76,15 +61,24 @@ export const useAuth = () => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
 
       if (error) throw error;
-      
-      toast.success("Welcome back!");
-      navigate('/');
+
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("fan_profiles")
+          .select("onboarding_completed")
+          .eq("id", data.user.id)
+          .single();
+
+        toast.success("Welcome back!");
+        navigate(profile?.onboarding_completed ? "/" : "/onboarding");
+      }
+
       return { error: null };
     } catch (error: any) {
       console.error("Sign in error:", error);
@@ -94,26 +88,13 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      toast.success("Signed out successfully");
-      navigate('/');
+      await supabase.auth.signOut();
+      toast.success("Signed out");
+      navigate("/auth");
     } catch (error: any) {
-      console.error("Sign out error:", error);
       toast.error("Error signing out");
     }
   };
 
-  const isAnonymous = user?.is_anonymous ?? false;
-
-  return {
-    user,
-    session,
-    loading,
-    isAnonymous,
-    signUp,
-    signIn,
-    signOut
-  };
+  return { user, session, loading, signUp, signIn, signOut };
 };
