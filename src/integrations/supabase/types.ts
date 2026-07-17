@@ -7,306 +7,1185 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
-  }
   public: {
     Tables: {
-      profiles: {
+      athletes: {
+        Row: {
+          club_id: string | null
+          country_id: string | null
+          created_at: string
+          id: string
+          jersey_number: number | null
+          name: string
+          photo_url: string | null
+          position: string | null
+          slug: string
+          sport_id: string | null
+        }
+        Insert: {
+          club_id?: string | null
+          country_id?: string | null
+          created_at?: string
+          id?: string
+          jersey_number?: number | null
+          name: string
+          photo_url?: string | null
+          position?: string | null
+          slug: string
+          sport_id?: string | null
+        }
+        Update: {
+          club_id?: string | null
+          country_id?: string | null
+          created_at?: string
+          id?: string
+          jersey_number?: number | null
+          name?: string
+          photo_url?: string | null
+          position?: string | null
+          slug?: string
+          sport_id?: string | null
+        }
+        Relationships: []
+      }
+      city_ambassadors: {
+        Row: {
+          city: string
+          claimed_at: string
+          club_id: string | null
+          country_id: string | null
+          fan_id: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          city: string
+          claimed_at?: string
+          club_id?: string | null
+          country_id?: string | null
+          fan_id: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          city?: string
+          claimed_at?: string
+          club_id?: string | null
+          country_id?: string | null
+          fan_id?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      clubs: {
+        Row: {
+          country_id: string | null
+          created_at: string
+          fan_count: number
+          founded_year: number | null
+          id: string
+          logo_url: string | null
+          name: string
+          primary_color: string
+          secondary_color: string
+          slug: string
+          sport_id: string | null
+          stadium: string | null
+        }
+        Insert: {
+          country_id?: string | null
+          created_at?: string
+          fan_count?: number
+          founded_year?: number | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          primary_color?: string
+          secondary_color?: string
+          slug: string
+          sport_id?: string | null
+          stadium?: string | null
+        }
+        Update: {
+          country_id?: string | null
+          created_at?: string
+          fan_count?: number
+          founded_year?: number | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          primary_color?: string
+          secondary_color?: string
+          slug?: string
+          sport_id?: string | null
+          stadium?: string | null
+        }
+        Relationships: []
+      }
+      communities: {
+        Row: {
+          club_id: string | null
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          member_count: number
+          name: string
+          post_count: number
+          slug: string
+          sport_id: string | null
+        }
+        Insert: {
+          club_id?: string | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          member_count?: number
+          name: string
+          post_count?: number
+          slug: string
+          sport_id?: string | null
+        }
+        Update: {
+          club_id?: string | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          member_count?: number
+          name?: string
+          post_count?: number
+          slug?: string
+          sport_id?: string | null
+        }
+        Relationships: []
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          fan_id: string
+          id: string
+          joined_at: string
+          role: string
+        }
+        Insert: {
+          community_id: string
+          fan_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+        }
+        Update: {
+          community_id?: string
+          fan_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+        }
+        Relationships: []
+      }
+      competitions: {
+        Row: {
+          country_id: string | null
+          created_at: string
+          id: string
+          level: string
+          logo_url: string | null
+          name: string
+          slug: string
+          sport_id: string | null
+        }
+        Insert: {
+          country_id?: string | null
+          created_at?: string
+          id?: string
+          level?: string
+          logo_url?: string | null
+          name: string
+          slug: string
+          sport_id?: string | null
+        }
+        Update: {
+          country_id?: string | null
+          created_at?: string
+          id?: string
+          level?: string
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          sport_id?: string | null
+        }
+        Relationships: []
+      }
+      content_interactions: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string
+          fan_id: string
+          id: string
+          interaction_type: string
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string
+          fan_id: string
+          id?: string
+          interaction_type: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          fan_id?: string
+          id?: string
+          interaction_type?: string
+        }
+        Relationships: []
+      }
+      countries: {
+        Row: {
+          code: string
+          flag_url: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          flag_url?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          flag_url?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      digital_collectibles: {
+        Row: {
+          athlete_id: string | null
+          club_id: string | null
+          earned_at: string
+          fan_id: string
+          id: string
+          image_url: string | null
+          name: string
+          rarity: string
+        }
+        Insert: {
+          athlete_id?: string | null
+          club_id?: string | null
+          earned_at?: string
+          fan_id: string
+          id?: string
+          image_url?: string | null
+          name: string
+          rarity?: string
+        }
+        Update: {
+          athlete_id?: string | null
+          club_id?: string | null
+          earned_at?: string
+          fan_id?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          rarity?: string
+        }
+        Relationships: []
+      }
+      earn_tasks: {
+        Row: {
+          club_id: string | null
+          coins_reward: number
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          match_id: string | null
+          max_completions_per_fan: number
+          payload: Json | null
+          spent_budget_coins: number
+          sponsor_id: string | null
+          task_type: string
+          title: string
+          total_budget_coins: number | null
+        }
+        Insert: {
+          club_id?: string | null
+          coins_reward?: number
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          match_id?: string | null
+          max_completions_per_fan?: number
+          payload?: Json | null
+          spent_budget_coins?: number
+          sponsor_id?: string | null
+          task_type: string
+          title: string
+          total_budget_coins?: number | null
+        }
+        Update: {
+          club_id?: string | null
+          coins_reward?: number
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          match_id?: string | null
+          max_completions_per_fan?: number
+          payload?: Json | null
+          spent_budget_coins?: number
+          sponsor_id?: string | null
+          task_type?: string
+          title?: string
+          total_budget_coins?: number | null
+        }
+        Relationships: []
+      }
+      fan_athletes: {
+        Row: {
+          athlete_id: string
+          fan_id: string
+          followed_at: string
+          id: string
+        }
+        Insert: {
+          athlete_id: string
+          fan_id: string
+          followed_at?: string
+          id?: string
+        }
+        Update: {
+          athlete_id?: string
+          fan_id?: string
+          followed_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      fan_clubs: {
+        Row: {
+          club_id: string
+          fan_id: string
+          followed_at: string
+          id: string
+          is_primary: boolean
+        }
+        Insert: {
+          club_id: string
+          fan_id: string
+          followed_at?: string
+          id?: string
+          is_primary?: boolean
+        }
+        Update: {
+          club_id?: string
+          fan_id?: string
+          followed_at?: string
+          id?: string
+          is_primary?: boolean
+        }
+        Relationships: []
+      }
+      fan_commercial_profiles: {
+        Row: {
+          brand_affinity: Json
+          commercial_value_score: number
+          data_consent: boolean
+          estimated_annual_value: number
+          fan_id: string
+          id: string
+          spending_power: string
+          updated_at: string
+        }
+        Insert: {
+          brand_affinity?: Json
+          commercial_value_score?: number
+          data_consent?: boolean
+          estimated_annual_value?: number
+          fan_id: string
+          id?: string
+          spending_power?: string
+          updated_at?: string
+        }
+        Update: {
+          brand_affinity?: Json
+          commercial_value_score?: number
+          data_consent?: boolean
+          estimated_annual_value?: number
+          fan_id?: string
+          id?: string
+          spending_power?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fan_competitions: {
+        Row: {
+          competition_id: string
+          fan_id: string
+          followed_at: string
+          id: string
+        }
+        Insert: {
+          competition_id: string
+          fan_id: string
+          followed_at?: string
+          id?: string
+        }
+        Update: {
+          competition_id?: string
+          fan_id?: string
+          followed_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      fan_engagement_events: {
+        Row: {
+          coins_delta: number
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          fan_id: string
+          id: string
+        }
+        Insert: {
+          coins_delta?: number
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          fan_id: string
+          id?: string
+        }
+        Update: {
+          coins_delta?: number
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          fan_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      fan_passports: {
+        Row: {
+          communities_joined: number
+          correct_predictions: number
+          created_at: string
+          engagement_tier: string
+          fan_coins_balance: number
+          fan_coins_earned: number
+          fan_coins_spent: number
+          fan_id: string
+          id: string
+          identity_score: number
+          posts_created: number
+          total_predictions: number
+          updated_at: string
+        }
+        Insert: {
+          communities_joined?: number
+          correct_predictions?: number
+          created_at?: string
+          engagement_tier?: string
+          fan_coins_balance?: number
+          fan_coins_earned?: number
+          fan_coins_spent?: number
+          fan_id: string
+          id?: string
+          identity_score?: number
+          posts_created?: number
+          total_predictions?: number
+          updated_at?: string
+        }
+        Update: {
+          communities_joined?: number
+          correct_predictions?: number
+          created_at?: string
+          engagement_tier?: string
+          fan_coins_balance?: number
+          fan_coins_earned?: number
+          fan_coins_spent?: number
+          fan_id?: string
+          id?: string
+          identity_score?: number
+          posts_created?: number
+          total_predictions?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fan_profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          city: string | null
+          country_id: string | null
           created_at: string
-          device_id: string
+          display_name: string | null
+          fan_personality_type: string | null
           id: string
+          is_verified: boolean
+          onboarding_completed: boolean
           updated_at: string
           username: string
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country_id?: string | null
           created_at?: string
-          device_id: string
+          display_name?: string | null
+          fan_personality_type?: string | null
           id: string
+          is_verified?: boolean
+          onboarding_completed?: boolean
           updated_at?: string
           username: string
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country_id?: string | null
           created_at?: string
-          device_id?: string
+          display_name?: string | null
+          fan_personality_type?: string | null
           id?: string
+          is_verified?: boolean
+          onboarding_completed?: boolean
           updated_at?: string
           username?: string
         }
         Relationships: []
       }
-      session_limits: {
+      fan_proofs: {
         Row: {
-          created_at: string
-          max_contributors: number
-          max_video_duration: number
-          session_id: string
+          caption: string | null
+          coins_awarded: number
+          fan_id: string
+          id: string
+          media_url: string
+          status: string
+          submitted_at: string
+          task_id: string | null
         }
         Insert: {
-          created_at?: string
-          max_contributors?: number
-          max_video_duration?: number
-          session_id: string
+          caption?: string | null
+          coins_awarded?: number
+          fan_id: string
+          id?: string
+          media_url: string
+          status?: string
+          submitted_at?: string
+          task_id?: string | null
         }
         Update: {
-          created_at?: string
-          max_contributors?: number
-          max_video_duration?: number
-          session_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_limits_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: true
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      session_participants: {
-        Row: {
-          device_id: string
-          id: string
-          joined_at: string
-          session_id: string
-          user_id: string
-        }
-        Insert: {
-          device_id: string
+          caption?: string | null
+          coins_awarded?: number
+          fan_id?: string
           id?: string
-          joined_at?: string
-          session_id: string
-          user_id: string
+          media_url?: string
+          status?: string
+          submitted_at?: string
+          task_id?: string | null
         }
-        Update: {
-          device_id?: string
-          id?: string
-          joined_at?: string
-          session_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_participants_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      sessions: {
+      fan_rewards: {
         Row: {
-          created_at: string
+          current_balance: number
+          fan_id: string
           id: string
-          is_active: boolean
-          is_live: boolean
-          latitude: number | null
-          longitude: number | null
-          max_video_length: number
-          mode: string
-          name: string
-          owner_id: string
-          tier: string
-          time_code: string
+          lifetime_tier: string
+          total_earned: number
+          total_spent: number
           updated_at: string
         }
         Insert: {
-          created_at?: string
+          current_balance?: number
+          fan_id: string
           id?: string
-          is_active?: boolean
-          is_live?: boolean
-          latitude?: number | null
-          longitude?: number | null
-          max_video_length?: number
-          mode: string
-          name: string
-          owner_id: string
-          tier?: string
-          time_code: string
+          lifetime_tier?: string
+          total_earned?: number
+          total_spent?: number
           updated_at?: string
         }
         Update: {
-          created_at?: string
+          current_balance?: number
+          fan_id?: string
           id?: string
-          is_active?: boolean
-          is_live?: boolean
-          latitude?: number | null
-          longitude?: number | null
-          max_video_length?: number
-          mode?: string
-          name?: string
-          owner_id?: string
-          tier?: string
-          time_code?: string
+          lifetime_tier?: string
+          total_earned?: number
+          total_spent?: number
           updated_at?: string
         }
         Relationships: []
       }
-      synced_sessions: {
+      fan_sports: {
+        Row: {
+          fan_id: string
+          followed_at: string
+          id: string
+          sport_id: string
+        }
+        Insert: {
+          fan_id: string
+          followed_at?: string
+          id?: string
+          sport_id: string
+        }
+        Update: {
+          fan_id?: string
+          followed_at?: string
+          id?: string
+          sport_id?: string
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          away_club_id: string | null
+          away_score: number | null
+          competition_id: string | null
+          created_at: string
+          home_club_id: string | null
+          home_score: number | null
+          id: string
+          minute: number | null
+          scheduled_at: string
+          status: string
+          venue: string | null
+        }
+        Insert: {
+          away_club_id?: string | null
+          away_score?: number | null
+          competition_id?: string | null
+          created_at?: string
+          home_club_id?: string | null
+          home_score?: number | null
+          id?: string
+          minute?: number | null
+          scheduled_at: string
+          status?: string
+          venue?: string | null
+        }
+        Update: {
+          away_club_id?: string | null
+          away_score?: number | null
+          competition_id?: string | null
+          created_at?: string
+          home_club_id?: string | null
+          home_score?: number | null
+          id?: string
+          minute?: number | null
+          scheduled_at?: string
+          status?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
+      post_replies: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: []
+      }
+      post_votes: {
         Row: {
           created_at: string
-          duration: number
-          export_format: string
-          has_watermark: boolean
+          fan_id: string
           id: string
-          session_id: string
-          storage_path: string
+          post_id: string
+          vote: number
         }
         Insert: {
           created_at?: string
-          duration: number
-          export_format?: string
-          has_watermark?: boolean
+          fan_id: string
           id?: string
-          session_id: string
-          storage_path: string
+          post_id: string
+          vote: number
         }
         Update: {
           created_at?: string
-          duration?: number
-          export_format?: string
-          has_watermark?: boolean
+          fan_id?: string
           id?: string
-          session_id?: string
-          storage_path?: string
+          post_id?: string
+          vote?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "synced_sessions_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      videos: {
+      posts: {
         Row: {
-          device_id: string
-          duration: number
+          author_id: string
+          community_id: string
+          content: string
+          created_at: string
           id: string
-          latitude: number | null
-          longitude: number | null
-          published_at: string | null
-          published_to_feed: boolean
-          session_id: string
-          storage_path: string
-          thumbnail_url: string | null
-          uploaded_at: string
-          user_id: string
+          is_pinned: boolean
+          media_url: string | null
+          reply_count: number
+          vote_count: number
         }
         Insert: {
-          device_id: string
-          duration: number
+          author_id: string
+          community_id: string
+          content: string
+          created_at?: string
           id?: string
-          latitude?: number | null
-          longitude?: number | null
-          published_at?: string | null
-          published_to_feed?: boolean
-          session_id: string
-          storage_path: string
-          thumbnail_url?: string | null
-          uploaded_at?: string
-          user_id: string
+          is_pinned?: boolean
+          media_url?: string | null
+          reply_count?: number
+          vote_count?: number
         }
         Update: {
-          device_id?: string
-          duration?: number
+          author_id?: string
+          community_id?: string
+          content?: string
+          created_at?: string
           id?: string
-          latitude?: number | null
-          longitude?: number | null
-          published_at?: string | null
-          published_to_feed?: boolean
-          session_id?: string
-          storage_path?: string
-          thumbnail_url?: string | null
-          uploaded_at?: string
-          user_id?: string
+          is_pinned?: boolean
+          media_url?: string | null
+          reply_count?: number
+          vote_count?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "videos_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "videos_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      webrtc_signals: {
+      prediction_leaderboards: {
+        Row: {
+          accuracy: number
+          correct_predictions: number
+          fan_id: string
+          id: string
+          period: string
+          points: number
+          rank: number | null
+          total_predictions: number
+          updated_at: string
+        }
+        Insert: {
+          accuracy?: number
+          correct_predictions?: number
+          fan_id: string
+          id?: string
+          period?: string
+          points?: number
+          rank?: number | null
+          total_predictions?: number
+          updated_at?: string
+        }
+        Update: {
+          accuracy?: number
+          correct_predictions?: number
+          fan_id?: string
+          id?: string
+          period?: string
+          points?: number
+          rank?: number | null
+          total_predictions?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      predictions: {
+        Row: {
+          away_score_prediction: number
+          coins_wagered: number
+          coins_won: number
+          confidence: string
+          created_at: string
+          fan_id: string
+          home_score_prediction: number
+          id: string
+          is_correct: boolean | null
+          match_id: string
+          points_awarded: number
+        }
+        Insert: {
+          away_score_prediction: number
+          coins_wagered?: number
+          coins_won?: number
+          confidence?: string
+          created_at?: string
+          fan_id: string
+          home_score_prediction: number
+          id?: string
+          is_correct?: boolean | null
+          match_id: string
+          points_awarded?: number
+        }
+        Update: {
+          away_score_prediction?: number
+          coins_wagered?: number
+          coins_won?: number
+          confidence?: string
+          created_at?: string
+          fan_id?: string
+          home_score_prediction?: number
+          id?: string
+          is_correct?: boolean | null
+          match_id?: string
+          points_awarded?: number
+        }
+        Relationships: []
+      }
+      prize_claims: {
+        Row: {
+          claimed_at: string
+          coins_spent: number
+          fan_id: string
+          fulfillment_details: Json | null
+          id: string
+          prize_id: string
+          status: string
+        }
+        Insert: {
+          claimed_at?: string
+          coins_spent: number
+          fan_id: string
+          fulfillment_details?: Json | null
+          id?: string
+          prize_id: string
+          status?: string
+        }
+        Update: {
+          claimed_at?: string
+          coins_spent?: number
+          fan_id?: string
+          fulfillment_details?: Json | null
+          id?: string
+          prize_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      prizes: {
+        Row: {
+          category: string
+          claimed_count: number
+          club_id: string | null
+          coins_cost: number
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          sponsor_id: string | null
+          stock: number
+        }
+        Insert: {
+          category?: string
+          claimed_count?: number
+          club_id?: string | null
+          coins_cost: number
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          sponsor_id?: string | null
+          stock?: number
+        }
+        Update: {
+          category?: string
+          claimed_count?: number
+          club_id?: string | null
+          coins_cost?: number
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          sponsor_id?: string | null
+          stock?: number
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          coins_awarded_referred: number
+          coins_awarded_referrer: number
+          completed_at: string
+          id: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          coins_awarded_referred?: number
+          coins_awarded_referrer?: number
+          completed_at?: string
+          id?: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          coins_awarded_referred?: number
+          coins_awarded_referrer?: number
+          completed_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
+        }
+        Relationships: []
+      }
+      reward_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          fan_id: string
+          id: string
+          reference_id: string | null
+          source: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          fan_id: string
+          id?: string
+          reference_id?: string | null
+          source: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          fan_id?: string
+          id?: string
+          reference_id?: string | null
+          source?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      sponsors: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          logo_url: string | null
+          name: string
+          tier: string
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name: string
+          tier?: string
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name?: string
+          tier?: string
+        }
+        Relationships: []
+      }
+      sponsor_campaigns: {
+        Row: {
+          budget_coins: number
+          conversions: number
+          created_at: string
+          end_date: string | null
+          engagements: number
+          id: string
+          impressions: number
+          name: string
+          objective: string | null
+          spent_coins: number
+          sponsor_id: string
+          start_date: string | null
+          status: string
+          target_clubs: Json | null
+          target_sports: Json | null
+          target_tiers: string[] | null
+        }
+        Insert: {
+          budget_coins?: number
+          conversions?: number
+          created_at?: string
+          end_date?: string | null
+          engagements?: number
+          id?: string
+          impressions?: number
+          name: string
+          objective?: string | null
+          spent_coins?: number
+          sponsor_id: string
+          start_date?: string | null
+          status?: string
+          target_clubs?: Json | null
+          target_sports?: Json | null
+          target_tiers?: string[] | null
+        }
+        Update: {
+          budget_coins?: number
+          conversions?: number
+          created_at?: string
+          end_date?: string | null
+          engagements?: number
+          id?: string
+          impressions?: number
+          name?: string
+          objective?: string | null
+          spent_coins?: number
+          sponsor_id?: string
+          start_date?: string | null
+          status?: string
+          target_clubs?: Json | null
+          target_sports?: Json | null
+          target_tiers?: string[] | null
+        }
+        Relationships: []
+      }
+      sports: {
         Row: {
           created_at: string
-          from_user_id: string
+          icon_url: string | null
           id: string
-          session_id: string
-          signal_data: Json
-          signal_type: string
-          to_user_id: string
+          name: string
+          slug: string
         }
         Insert: {
           created_at?: string
-          from_user_id: string
+          icon_url?: string | null
           id?: string
-          session_id: string
-          signal_data: Json
-          signal_type: string
-          to_user_id: string
+          name: string
+          slug: string
         }
         Update: {
           created_at?: string
-          from_user_id?: string
+          icon_url?: string | null
           id?: string
-          session_id?: string
-          signal_data?: Json
-          signal_type?: string
-          to_user_id?: string
+          name?: string
+          slug?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "webrtc_signals_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      talking_points: {
+        Row: {
+          club_id: string | null
+          context: string | null
+          created_at: string
+          generated_by: string
+          id: string
+          match_id: string | null
+          prompt: string
+        }
+        Insert: {
+          club_id?: string | null
+          context?: string | null
+          created_at?: string
+          generated_by?: string
+          id?: string
+          match_id?: string | null
+          prompt: string
+        }
+        Update: {
+          club_id?: string | null
+          context?: string | null
+          created_at?: string
+          generated_by?: string
+          id?: string
+          match_id?: string | null
+          prompt?: string
+        }
+        Relationships: []
+      }
+      task_completions: {
+        Row: {
+          coins_awarded: number
+          completed_at: string
+          fan_id: string
+          id: string
+          response_data: Json | null
+          task_id: string
+        }
+        Insert: {
+          coins_awarded: number
+          completed_at?: string
+          fan_id: string
+          id?: string
+          response_data?: Json | null
+          task_id: string
+        }
+        Update: {
+          coins_awarded?: number
+          completed_at?: string
+          fan_id?: string
+          id?: string
+          response_data?: Json | null
+          task_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      check_contributor_limit: {
-        Args: { p_session_id: string }
-        Returns: boolean
+      calculate_fan_identity_score: {
+        Args: { p_fan_id: string }
+        Returns: number
       }
-      generate_time_code: {
-        Args: { device_uuid: string; session_uuid: string }
+      update_engagement_tier: {
+        Args: { p_fan_id: string }
         Returns: string
       }
-      get_user_session_ids: { Args: { p_user_id: string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
@@ -317,125 +1196,16 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DefaultSchema = Database["public"]
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+export type Tables<T extends keyof DefaultSchema["Tables"]> =
+  DefaultSchema["Tables"][T]["Row"]
 
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+export type TablesInsert<T extends keyof DefaultSchema["Tables"]> =
+  DefaultSchema["Tables"][T]["Insert"]
 
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+export type TablesUpdate<T extends keyof DefaultSchema["Tables"]> =
+  DefaultSchema["Tables"][T]["Update"]
 
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const
+export type Enums<T extends keyof DefaultSchema["Enums"]> =
+  DefaultSchema["Enums"][T]
